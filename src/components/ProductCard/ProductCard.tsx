@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart } from 'lucide-react';
-import Card '../ui/Card/Card';
+import Card from '../ui/Card/Card';
 import Badge from '../ui/Badge/Badge';
 import Button from '../ui/Button/Button';
 import { Product } from '../../types';
-import { useCart } from '../../context/CartContext'; // Hooks directly into your tracking engine
+import { useCart } from '../../context/CartContext';
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -19,7 +19,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       addToCart({
         id: typeof product.id === 'string' ? parseInt(product.id) : product.id,
         name_en: product.name,
-        name_ar: product.name, // Fallback safe label translation
+        name_ar: product.name, // Fallback localized placeholder
         price: product.price,
         image: product.image,
         quantity: 1
