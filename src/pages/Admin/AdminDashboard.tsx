@@ -242,7 +242,7 @@ const AdminDashboard = () => {
     return (
       <div className="admin-lock-screen">
         <form onSubmit={handlePasswordSubmit} className="lock-card">
-          <h3>Homiyaa Console</h3>
+          <h3>Homiyaa Admin</h3>
           <input
             type="password"
             placeholder="Enter Admin Password"
@@ -250,7 +250,7 @@ const AdminDashboard = () => {
             onChange={e => setPassword(e.target.value)}
             autoComplete="current-password"
           />
-          <button type="submit">Unlock Console</button>
+          <button type="submit">Unlock Admin Page</button>
         </form>
       </div>
     );
