@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart } from 'lucide-react';
-import Card from '../ui/Card/Card';
+import Card '../ui/Card/Card';
 import Badge from '../ui/Badge/Badge';
 import Button from '../ui/Button/Button';
 import { Product } from '../../types';
+import { useCart } from '../../context/CartContext'; // Hooks directly into your tracking engine
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -11,6 +12,21 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const { addToCart } = useCart();
+
+  const handleCartClick = () => {
+    if (addToCart) {
+      addToCart({
+        id: typeof product.id === 'string' ? parseInt(product.id) : product.id,
+        name_en: product.name,
+        name_ar: product.name, // Fallback safe label translation
+        price: product.price,
+        image: product.image,
+        quantity: 1
+      });
+    }
+  };
+
   return (
     <Card className="product-card">
       <div className="product-image-container">
@@ -67,13 +83,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
-          <motion.button
-  whileTap={{ scale: 0.9 }}
-  className="product-add-btn"
-  aria-label="Add to cart"
->
-  <ShoppingCart className="icon" />
-</motion.button>
+          <Button variant="primary" size="sm" onClick={handleCartClick}>
+            <ShoppingCart className="icon" />
+          </Button>
         </div>
       </div>
     </Card>

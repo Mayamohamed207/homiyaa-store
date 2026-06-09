@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { ShoppingCart, Heart, Layers, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext'; 
+import { useCart } from '../../context/CartContext'; // Connected to Cart Context Tracker Matrix
 
 // Atomic UI components
 import Card from '../ui/Card/Card';
@@ -34,13 +35,12 @@ interface Product {
 
 interface ProductGridProps {
   searchQuery: string;
-  onAddToCart?: (product: Product) => void;
 }
 
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'latest';
 
 /* ==========================================
-   1. PRODUCT CARD COMPONENT
+   1. PRODUCT CARD ITEM COMPONENT
    ========================================== */
 const ProductCardItem = ({ 
   item, 
@@ -49,7 +49,7 @@ const ProductCardItem = ({
 }: { 
   item: Product; 
   language: 'en' | 'ar'; 
-  onAddToCart?: (product: Product) => void; 
+  onAddToCart: (product: Product) => void; 
 }) => {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
@@ -142,7 +142,7 @@ const ProductCardItem = ({
             variant="primary" 
             size="sm" 
             disabled={item.is_sold_out}
-            onClick={() => onAddToCart && onAddToCart(item)}
+            onClick={() => onAddToCart(item)}
           >
             <ShoppingCart className="icon" size={18} />
           </Button>
@@ -155,8 +155,9 @@ const ProductCardItem = ({
 /* ==========================================
    2. MAIN PRODUCT GRID COMPONENT
    ========================================== */
-const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
+export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { language } = useLanguage();
+  const { addToCart } = useCart(); // Destructures your custom context hook directly here
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   
@@ -180,7 +181,30 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
     loadStoreProducts();
   }, []);
 
-  // Category Extraction Matrix
+  // Maps custom DB structure schemas into the unified objects consumed by CartDrawers
+  const handleAddToCartMapping = (item: Product) => {
+    const activePrice = item.discount_price ? item.discount_price : item.price;
+    const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
+    const mainImage = item.product_images?.[0]?.image_url || fallbackImage;
+
+    const cartNormalizedItem = {
+      id: item.id,
+      name_en: item.name_en,
+      name_ar: item.name_ar,
+      price: activePrice,
+      image: mainImage,
+      quantity: 1
+    };
+
+    // Safely executes your global context function safely, if present
+    if (addToCart) {
+      addToCart(cartNormalizedItem);
+    } else {
+      // Fallback configuration error catcher logic
+      console.warn("Cart Context handler logic missing configuration contexts.");
+    }
+  };
+
   const uniqueCategories = useMemo(() => {
     const categoriesMap = new Map<string, string>();
     
@@ -196,7 +220,6 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
     }));
   }, [products, language]);
 
-  // Combined Search, Category Filter, and Sorting Pipeline
   const processedProducts = useMemo(() => {
     let result = products.filter((item) => {
       const matchesEn = item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -241,10 +264,7 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
     <section className="product-grid-section">
       <div className="container">
         
-        {/* Modern Double Select Toolbar */}
         <div className="store-controls-wrapper">
-          
-          {/* Dropdown 1: Category Filter */}
           <div className="control-group">
             <label className="control-label">
               <Layers size={16} />
@@ -264,7 +284,6 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
             </select>
           </div>
 
-          {/* Dropdown 2: Sorting Logic */}
           <div className="control-group">
             <label className="control-label">
               <ArrowUpDown size={16} />
@@ -275,7 +294,7 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
             >
-              <option value="popular">{language === 'ar' ? 'الشعرية أولاً' : 'Popular First'}</option>
+              <option value="popular">{language === 'ar' ? 'الشعبية أولاً' : 'Popular First'}</option>
               <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest Arrivals'}</option>
               <option value="price-asc">{language === 'ar' ? 'السعر: من الأقل للأعلى' : 'Price: Low to High'}</option>
               <option value="price-desc">{language === 'ar' ? 'السعر: من الأعلى للأقل' : 'Price: High to Low'}</option>
@@ -283,7 +302,6 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
           </div>
         </div>
 
-        {/* Content Render Grid Display */}
         {processedProducts.length === 0 ? (
           <div className="empty-store-state">
             <h3>{language === 'ar' ? 'لم يتم العثور على نتائج' : 'No products found'}</h3>
@@ -308,7 +326,7 @@ const ProductGrid = ({ searchQuery, onAddToCart }: ProductGridProps) => {
                 key={item.id} 
                 item={item} 
                 language={language} 
-                onAddToCart={onAddToCart}
+                onAddToCart={handleAddToCartMapping}
               />
             ))}
           </div>

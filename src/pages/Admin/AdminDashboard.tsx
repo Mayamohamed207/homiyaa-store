@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Plus, ArrowLeft, FolderPlus, List, Image, Palette, Loader2, X, ClipboardList, Package } from 'lucide-react';
+import { ReactSortable } from 'react-sortablejs'; // Active Mobile Touch-Dragging Handler
 import AdminProductCard, { Product } from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
 import './AdminDashboard.css';
@@ -39,7 +40,6 @@ const AdminDashboard = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [formImages, setFormImages] = useState<UnifiedImage[]>([]);
   const [colors, setColors] = useState<ColorInput[]>([{ color_name_en: '', color_name_ar: '', color_code: '' }]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState<Product>(initialFormState);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const AdminDashboard = () => {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ADMIN_PASSWORD) {
-      alert('Admin password is not configured. Set VITE_ADMIN_PASSWORD in your .env file.');
+      alert('Admin password is not configured. Set VITE_ADMIN_PASSWORD in your Vercel Environment Variables.');
       return;
     }
     if (password === ADMIN_PASSWORD) setIsAuthenticated(true);
@@ -94,21 +94,6 @@ const AdminDashboard = () => {
       return prev.filter(img => img.id !== idToRemove);
     });
   };
-
-  const handleDragStart = (index: number) => setDraggedIndex(index);
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
-    const reordered = [...formImages];
-    const item = reordered[draggedIndex];
-    reordered.splice(draggedIndex, 1);
-    reordered.splice(index, 0, item);
-    setDraggedIndex(index);
-    setFormImages(reordered);
-  };
-
-  const handleDragEnd = () => setDraggedIndex(null);
 
   // ── Color helpers ─────────────────────────────────────────
   const handleAddColorRow = () =>
@@ -237,12 +222,11 @@ const AdminDashboard = () => {
     }
   };
 
-  // ── Lock screen ───────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="admin-lock-screen">
         <form onSubmit={handlePasswordSubmit} className="lock-card">
-          <h3>Homiyaa Admin</h3>
+          <h3>Homiyaa Console</h3>
           <input
             type="password"
             placeholder="Enter Admin Password"
@@ -250,13 +234,12 @@ const AdminDashboard = () => {
             onChange={e => setPassword(e.target.value)}
             autoComplete="current-password"
           />
-          <button type="submit">Unlock Admin Page</button>
+          <button type="submit">Unlock Console</button>
         </form>
       </div>
     );
   }
 
-  // ── Main render ───────────────────────────────────────────
   return (
     <div className="admin-container" style={{ maxWidth: '1250px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
 
@@ -388,6 +371,7 @@ const AdminDashboard = () => {
                 onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
 
+            {/* UPGRADED IMAGE DROPDOWN FEATURING TOUCH-READY HARDWARE GESTURES */}
             <div className="field full-width section-block">
               <label className="section-title"><Image size={16} /> Manage Product Images *</label>
               <input
@@ -395,17 +379,22 @@ const AdminDashboard = () => {
                 required={formImages.length === 0} disabled={isUploading}
                 onChange={handleFileChange} className="file-upload-picker"
               />
-              <p className="file-hint-text">Add images above. Drag and drop to reorder. Click X to remove.</p>
+              <p className="file-hint-text">📱 Mobile: Hold down and slide any box with your finger to reorder listing positions sequence.</p>
+              
               {formImages.length > 0 && (
-                <div className="image-preview-grid" style={{ marginTop: '15px' }}>
+                <ReactSortable
+                  list={formImages}
+                  setList={(newState) => setFormImages(newState)}
+                  animation={200}
+                  delay={70} // Gives mobile screen touch scrolling structural buffer priority
+                  className="image-preview-grid"
+                  style={{ marginTop: '15px' }}
+                >
                   {formImages.map((imgItem, idx) => (
                     <div
                       key={imgItem.id}
-                      className={`image-preview-item draggable ${draggedIndex === idx ? 'dragging' : ''}`}
-                      draggable
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragOver={e => handleDragOver(e, idx)}
-                      onDragEnd={handleDragEnd}
+                      className="image-preview-item"
+                      style={{ cursor: 'grab', touchAction: 'none' }}
                     >
                       <button type="button" className="remove-image-btn" onClick={() => removeImage(imgItem.id)}><X size={14} /></button>
                       <img src={imgItem.url} alt={`Preview ${idx}`} draggable={false} />
@@ -414,7 +403,7 @@ const AdminDashboard = () => {
                       </span>
                     </div>
                   ))}
-                </div>
+                </ReactSortable>
               )}
             </div>
 
