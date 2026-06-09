@@ -1,0 +1,90 @@
+.features-section {
+  padding: 6rem 0;
+  background: radial-gradient(circle at top right, var(--cream), var(--white) 60%);
+  position: relative;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.feature-card {
+  background-color: var(--white);
+  padding: 2.5rem 2rem;
+  border-radius: 1.5rem; /* Softer, rounder corners */
+  border: 1px solid rgba(0, 0, 0, 0.03); /* Barely visible border for depth */
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05); /* Soft, expansive shadow */
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Apple-like easing */
+}
+
+.feature-card:hover {
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.feature-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 1.25rem; /* Squircle shape instead of perfect circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.05) rotate(-3deg); /* Micro-interaction on hover */
+}
+
+.feature-icon .icon-large {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.feature-primary {
+  background: linear-gradient(135deg, var(--primary-100), #ffffff);
+  color: var(--primary-600);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.feature-secondary {
+  background: linear-gradient(135deg, var(--secondary-100), #ffffff);
+  color: var(--secondary-700);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.feature-warm {
+  background: linear-gradient(135deg, var(--warm-200), #ffffff);
+  color: var(--warm-800);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.feature-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--warm-900);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.feature-description {
+  color: var(--warm-600);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 768px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
