@@ -744,3 +744,45 @@
 .cancel-btn:hover:not(:disabled) {
   background: var(--primary-200);
 }
+
+/* ==================================================
+   TOUCH GESTURE STYLES FOR MOBILE IMAGE REORDERING
+   ================================================== */
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.image-preview-item {
+  position: relative;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #f8fafc;
+  
+  /* Overrides core mobile browser defaults */
+  touch-action: none !important; 
+  -webkit-touch-callout: none !important; 
+}
+
+/* Fired precisely when a finger presses and holds an image card */
+.image-preview-item:active, .drag-selected-item {
+  cursor: grabbing !important;
+  border-color: #4f46e5 !important;
+  transform: scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+  z-index: 9999 !important;
+}
+
+/* Empty placeholder box styling during active transit dragging */
+.sortable-ghost {
+  opacity: 0.25 !important;
+  background-color: #cbd5e1 !important;
+  border: 2px dashed #4f46e5 !important;
+}

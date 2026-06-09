@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Plus, ArrowLeft, FolderPlus, List, Image, Palette, Loader2, X, ClipboardList, Package } from 'lucide-react';
-import { ReactSortable } from 'react-sortablejs'; // Active Mobile Touch-Dragging Handler
+import { ReactSortable } from 'react-sortablejs'; 
 import AdminProductCard, { Product } from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
 import './AdminDashboard.css';
@@ -72,7 +72,6 @@ const AdminDashboard = () => {
     setPassword('');
   };
 
-  // ── Image helpers ─────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files).map((file, index) => ({
@@ -95,7 +94,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // ── Color helpers ─────────────────────────────────────────
   const handleAddColorRow = () =>
     setColors([...colors, { color_name_en: '', color_name_ar: '', color_code: '' }]);
 
@@ -105,7 +103,6 @@ const AdminDashboard = () => {
     setColors(updated);
   };
 
-  // ── Save product ──────────────────────────────────────────
   const getCleanPayload = () => {
     const payload = { ...formData };
     delete payload.id;
@@ -187,7 +184,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ── Form open helpers ─────────────────────────────────────
   const closeForm = () => {
     formImages.forEach(img => { if (img.type === 'new') URL.revokeObjectURL(img.url); });
     setIsFormOpen(false);
@@ -371,7 +367,6 @@ const AdminDashboard = () => {
                 onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
 
-            {/* UPGRADED IMAGE DROPDOWN FEATURING TOUCH-READY HARDWARE GESTURES */}
             <div className="field full-width section-block">
               <label className="section-title"><Image size={16} /> Manage Product Images *</label>
               <input
@@ -386,7 +381,9 @@ const AdminDashboard = () => {
                   list={formImages}
                   setList={(newState) => setFormImages(newState)}
                   animation={200}
-                  delay={70} // Gives mobile screen touch scrolling structural buffer priority
+                  delay={70} 
+                  chosenClass="drag-selected-item"
+                  ghostClass="sortable-ghost"
                   className="image-preview-grid"
                   style={{ marginTop: '15px' }}
                 >

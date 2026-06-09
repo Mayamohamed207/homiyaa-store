@@ -19,7 +19,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       addToCart({
         id: typeof product.id === 'string' ? parseInt(product.id) : product.id,
         name_en: product.name,
-        name_ar: product.name, // Fallback localized placeholder
+        name_ar: product.name,
         price: product.price,
         image: product.image,
         quantity: 1
