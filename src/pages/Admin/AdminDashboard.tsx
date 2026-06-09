@@ -380,8 +380,11 @@ const AdminDashboard = () => {
                 <ReactSortable
                   list={formImages}
                   setList={(newState) => setFormImages(newState)}
-                  animation={200}
-                  delay={70} 
+                  animation={150}
+                  delay={200}
+                  delayOnTouchOnly={true}
+                  forceFallback={true}
+                  fallbackTolerance={5}
                   chosenClass="drag-selected-item"
                   ghostClass="sortable-ghost"
                   className="image-preview-grid"
@@ -391,7 +394,7 @@ const AdminDashboard = () => {
                     <div
                       key={imgItem.id}
                       className="image-preview-item"
-                      style={{ cursor: 'grab', touchAction: 'none' }}
+                      style={{ cursor: 'grab' }}
                     >
                       <button type="button" className="remove-image-btn" onClick={() => removeImage(imgItem.id)}><X size={14} /></button>
                       <img src={imgItem.url} alt={`Preview ${idx}`} draggable={false} />
