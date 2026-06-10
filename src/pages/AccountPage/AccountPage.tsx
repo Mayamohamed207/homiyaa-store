@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../supabaseClient';
-import { Package, Heart, ArrowLeft, Loader2, ShoppingBag, MapPin, Calendar, Hash } from 'lucide-react';
+import { Package, Heart, Loader2, ShoppingBag, MapPin, Calendar, Hash } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './AccountPage.css';
 
@@ -37,7 +37,6 @@ interface WishlistItem {
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
 
-/* ── translate status badge ───────────────────────────────── */
 const useTranslateStatus = (t: Function) => (status: string) => {
   switch (status) {
     case 'Pending':   return t('Pending',   'قيد الانتظار');
@@ -62,7 +61,6 @@ const AccountPage = () => {
 
   const isRtl = language === 'ar';
 
-  /* ── redirect guests ──────────────────────────────────────── */
   useEffect(() => {
     if (!authLoading && !user) {
       toast.error(t('Please sign in to view your account', 'يرجى تسجيل الدخول لعرض حسابك'));
@@ -70,14 +68,12 @@ const AccountPage = () => {
     }
   }, [user, authLoading, navigate, t]);
 
-  /* ── fetch + realtime ─────────────────────────────────────── */
   useEffect(() => {
     if (!user) return;
 
     const fetchUserData = async () => {
       setDataLoading(true);
       try {
-        /* orders */
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select('*')
@@ -86,7 +82,6 @@ const AccountPage = () => {
 
         if (ordersError) throw ordersError;
 
-        /* collect product IDs that have no saved image so we can hydrate them */
         const missingIds: number[] = [];
         (ordersData || []).forEach((order: any) => {
           (order.items || []).forEach((item: any) => {
@@ -94,7 +89,6 @@ const AccountPage = () => {
           });
         });
 
-        /* fetch first image for products that are missing one */
         let imageMap: Record<number, string> = {};
         if (missingIds.length > 0) {
           const uniqueIds = [...new Set(missingIds)];
@@ -122,12 +116,10 @@ const AccountPage = () => {
             product_title: isRtl ? item.name_ar : item.name_en,
             quantity:      item.quantity,
             price:         item.price,
-            /* use saved image → fallback to fetched product image → fallback placeholder */
             image: item.image || imageMap[Number(item.id)] || FALLBACK_IMAGE,
           })),
         }));
 
-        /* wishlist */
         const { data: wishlistData, error: wishlistError } = await supabase
           .from('wishlists')
           .select('id, product_id, products(name_en, name_ar, price, product_images(image_url))')
@@ -155,36 +147,31 @@ const AccountPage = () => {
 
     fetchUserData();
 
-  const channel = supabase
-    .channel(`user-orders-${user.id}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `user_id=eq.${user.id}`,   // ← server-side filter
-      },
-      (payload) => {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === payload.new.id        // ← no String() casting needed
-              ? { ...o, status: payload.new.status }
-              : o
-          )
-        );
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('Realtime order updates active');
-      }
-    });
+    const channel = supabase
+      .channel(`user-orders-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setOrders((prev) =>
+            prev.map((o) =>
+              o.id === payload.new.id
+                ? { ...o, status: payload.new.status }
+                : o
+            )
+          );
+        }
+      )
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [user, t, isRtl]);
 
-  /* ── loading screen ───────────────────────────────────────── */
   if (authLoading || (dataLoading && !user)) {
     return (
       <div className="account-loading-fallback">
@@ -194,19 +181,9 @@ const AccountPage = () => {
     );
   }
 
-  /* ── render ───────────────────────────────────────────────── */
   return (
     <div className="account-page-container container" dir={isRtl ? 'rtl' : 'ltr'}>
 
-      {/* Back */}
-      <div className="account-top-nav-bar">
-        <button onClick={() => navigate('/')} className="account-back-home-btn" type="button">
-          <ArrowLeft size={16} className="account-back-arrow-icon" />
-          <span>{t('Back to Store', 'الرجوع للمتجر')}</span>
-        </button>
-      </div>
-
-      {/* Profile hero */}
       <div className="account-hero-profile-card">
         <div className="profile-avatar-circle">
           <span className="avatar-initial">
@@ -219,7 +196,6 @@ const AccountPage = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="account-tab-headers">
         <button onClick={() => setActiveTab('orders')} className={`account-tab-btn ${activeTab === 'orders' ? 'active-tab' : ''}`} type="button">
           <Package size={17} />
@@ -234,100 +210,100 @@ const AccountPage = () => {
       <div className="account-tab-content-area">
         {dataLoading ? (
           <div className="tab-internal-loader"><Loader2 className="spinning" size={24} /></div>
-
         ) : activeTab === 'orders' ? (
-          orders.length === 0 ? (
-            <div className="account-empty-state-card">
-              <ShoppingBag size={44} className="empty-state-icon" />
-              <h3>{t('No Orders Yet', 'لا توجد طلبات بعد')}</h3>
-              <p>{t('Place your first order and it will appear here.', 'أضف منتجات وابدأ طلبك الأول.')}</p>
-              <button onClick={() => navigate('/')} className="empty-state-shop-btn">{t('Shop Now', 'تسوق الآن')}</button>
-            </div>
-          ) : (
-            <div className="orders-list-grid-wrapper">
-              {orders.map((order) => (
-                <div key={order.id} className="order-history-row-card">
-
-                  {/* ── card header ── */}
-                  <div className="order-card-header">
-                    <div className="order-header-left">
-                      <div className="order-meta-chip">
-                        <Hash size={11} />
-                        <span>{String(order.id).slice(0, 8).toUpperCase()}</span>
-                      </div>
-                      <div className="order-meta-chip">
-                        <Calendar size={11} />
-                        <span>
-                          {new Date(order.created_at).toLocaleDateString(
-                            language === 'ar' ? 'ar-EG' : 'en-US',
-                            { year: 'numeric', month: 'short', day: 'numeric' }
-                          )}
-                        </span>
-                      </div>
-                      {order.governorate && (
+          <div>
+            {orders.length === 0 ? (
+              <div className="account-empty-state-card">
+                <ShoppingBag size={44} className="empty-state-icon" />
+                <h3>{t('No Orders Yet', 'لا توجد طلبات بعد')}</h3>
+                <p>{t('Place your first order and it will appear here.', 'أضف منتجات وابدأ طلبك الأول.')}</p>
+              </div>
+            ) : (
+              <div className="orders-list-grid-wrapper">
+                {orders.map((order) => (
+                  <div key={order.id} className="order-history-row-card">
+                    <div className="order-card-header">
+                      <div className="order-header-left">
                         <div className="order-meta-chip">
-                          <MapPin size={11} />
-                          <span>{order.governorate}</span>
+                          <Hash size={11} />
+                          <span>{String(order.id).slice(0, 8).toUpperCase()}</span>
                         </div>
-                      )}
-                    </div>
-                    <span className={`status-badge-pill status-${order.status.toLowerCase()}`}>
-                      {translateStatus(order.status)}
-                    </span>
-                  </div>
-
-                  {/* ── items ── */}
-                  <div className="order-items-body">
-                    {(order.items || []).map((item, idx) => (
-                      <div key={item.id ?? idx} className="order-item-receipt-row">
-                        <div className="order-item-img-wrap">
-                          <img
-                            src={item.image || FALLBACK_IMAGE}
-                            alt={item.product_title}
-                            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                          />
+                        <div className="order-meta-chip">
+                          <Calendar size={11} />
+                          <span>
+                            {new Date(order.created_at).toLocaleDateString(
+                              language === 'ar' ? 'ar-EG' : 'en-US',
+                              { year: 'numeric', month: 'short', day: 'numeric' }
+                            )}
+                          </span>
                         </div>
-                        <div className="order-item-info">
-                          <p className="order-item-name">{item.product_title}</p>
-                          <div className="order-item-sub-row">
-                            <span className="order-item-qty-badge">×{item.quantity}</span>
-                            <span className="order-item-unit-price">{item.price} {t('EGP', 'ج.م')}</span>
+                        {order.governorate && (
+                          <div className="order-meta-chip">
+                            <MapPin size={11} />
+                            <span>{order.governorate}</span>
                           </div>
-                        </div>
-                        <span className="order-item-line-total">
-                          {item.price * item.quantity} {t('EGP', 'ج.م')}
-                        </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-
-                  {/* ── footer totals ── */}
-                  <div className="order-card-footer">
-                    <div className="order-footer-breakdown">
-                      {order.subtotal > 0 && (
-                        <div className="order-footer-row">
-                          <span>{t('Subtotal', 'المجموع الفرعي')}</span>
-                          <span>{order.subtotal} {t('EGP', 'ج.م')}</span>
-                        </div>
-                      )}
-                      {order.shipping_cost > 0 && (
-                        <div className="order-footer-row">
-                          <span>{t('Shipping', 'الشحن')}</span>
-                          <span>{order.shipping_cost} {t('EGP', 'ج.م')}</span>
-                        </div>
-                      )}
+                      <span className={`status-badge-pill status-${order.status.toLowerCase()}`}>
+                        {translateStatus(order.status)}
+                      </span>
                     </div>
-                    <div className="order-footer-total-row">
-                      <span>{t('Total', 'الإجمالي')}</span>
-                      <strong className="order-footer-total-cost">{order.total_amount} {t('EGP', 'ج.م')}</strong>
+
+                    <div className="order-items-body">
+                      {(order.items || []).map((item, idx) => (
+                        <div key={item.id ?? idx} className="order-item-receipt-row">
+                          <div className="order-item-img-wrap">
+                            <img
+                              src={item.image || FALLBACK_IMAGE}
+                              alt={item.product_title}
+                              onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                            />
+                          </div>
+                          <div className="order-item-info">
+                            <p className="order-item-name">{item.product_title}</p>
+                            <div className="order-item-sub-row">
+                              <span className="order-item-qty-badge">×{item.quantity}</span>
+                              <span className="order-item-unit-price">{item.price} {t('EGP', 'ج.م')}</span>
+                            </div>
+                          </div>
+                          <span className="order-item-line-total">
+                            {item.price * item.quantity} {t('EGP', 'ج.م')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="order-card-footer">
+                      <div className="order-footer-breakdown">
+                        {order.subtotal > 0 && (
+                          <div className="order-footer-row">
+                            <span>{t('Subtotal', 'المجموع الفرعي')}</span>
+                            <span>{order.subtotal} {t('EGP', 'ج.م')}</span>
+                          </div>
+                        )}
+                        {order.shipping_cost > 0 && (
+                          <div className="order-footer-row">
+                            <span>{t('Shipping', 'الشحن')}</span>
+                            <span>{order.shipping_cost} {t('EGP', 'ج.م')}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="order-footer-total-row">
+                        <span>{t('Total', 'الإجمالي')}</span>
+                        <strong className="order-footer-total-cost">{order.total_amount} {t('EGP', 'ج.م')}</strong>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                </div>
-              ))}
+            <div className="account-orders-global-footer">
+              <button onClick={() => navigate('/')} className="empty-state-shop-btn">
+                {t('Shop Now', 'تسوق الآن')}
+              </button>
             </div>
-          )
-
+          </div>
         ) : (
           wishlist.length === 0 ? (
             <div className="account-empty-state-card">
