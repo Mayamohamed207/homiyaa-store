@@ -104,11 +104,12 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       return matchesEn || matchesAr;
     });
 
-    if (selectedCategory === '__wishlist__') {
+   if (selectedCategory === '__wishlist__') {
       result = result.filter(item => wishlistIds.has(item.id));
+    } else if (selectedCategory === '__new_arrivals__') {
+      result = result.filter(item => item.is_new_arrival === true);
     } else if (selectedCategory === '__sales__') {
-      // Filters for products that have a non-null, valid discount price configured
-      result = result.filter(item => item.discount_price !== null && item.discount_price > 0);
+    result = result.filter(item => item.discount_price !== null && item.discount_price > 0);
     } else if (selectedCategory !== 'all') {
       result = result.filter(
         item => item.category_en.toLowerCase() === selectedCategory.toLowerCase()
@@ -181,6 +182,13 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             {language === 'ar' ? '🏷️ التخفيضات' : '🏷️ Sales'}
           </button>
 
+          <button
+            className={`category-pill ${selectedCategory === '__new_arrivals__' ? 'active' : ''}`}
+            onClick={() => handleCategorySelect('__new_arrivals__')}
+          >
+            {language === 'ar' ? '✦ وصل حديثاً' : '✦ New Arrivals'}
+          </button>
+
           {user && (
             <button
               className={`category-pill ${selectedCategory === '__wishlist__' ? 'active' : ''}`}
@@ -203,8 +211,10 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
         <div className="section-header">
           <span className="section-title">
-            {selectedCategory === '__sales__' 
+            {selectedCategory === '__sales__'
               ? (language === 'ar' ? 'العروض الحالية' : 'Active Deals')
+              : selectedCategory === '__new_arrivals__'
+              ? (language === 'ar' ? 'وصل حديثاً' : 'New Arrivals')
               : (language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks')
             }
           </span>
