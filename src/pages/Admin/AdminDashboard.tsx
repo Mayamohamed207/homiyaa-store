@@ -462,13 +462,13 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
         ) : (
           <>
             <div className="admin-header">
-              <h2>{t('Homiyaa Control Panel', 'لوحة التحكم وإدارة المنتجات')}</h2>
+              <h2>{t('Homiyaa Admin', 'إدارة المنتجات')}</h2>
               <button onClick={openAddMode} className="add-btn"><Plus size={18} /> {t('Add New Product', 'إضافة منتج جديد')}</button>
             </div>
 
             <div className="admin-filter-bar">
               <div className="filter-select-wrapper">
-                <Layers size={15} className="select-icon" />
+                {/* <Layers size={15} className="select-icon" /> */}
                 <select value={selectedCategory} onChange={e => {
                   setSelectedCategory(e.target.value);
                   window.dispatchEvent(new CustomEvent('adminCategoryChanged', { detail: e.target.value }));
@@ -481,7 +481,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
               </div>
 
               <div className="filter-select-wrapper">
-                <ArrowUpDown size={15} className="select-icon" />
+                {/* <ArrowUpDown size={15} className="select-icon" /> */}
                 <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
                   <option value="latest">{t('Latest Added', 'المضاف حديثاً')}</option>
                   <option value="price-asc">{t('Price: Low to High', 'السعر: من الأقل للأعلى')}</option>
