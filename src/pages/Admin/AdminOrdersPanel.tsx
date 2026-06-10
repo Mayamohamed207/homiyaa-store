@@ -132,7 +132,18 @@ const handleDeleteOrder = (orderId: number) => {
               const statusStyle = STATUS_STYLES[order.status as OrderStatus] ?? STATUS_STYLES.Pending;
               return (
                 <tr key={order.id}>
-                  <td className="order-id-cell">#{order.id}</td>
+
+                <td className="order-id-cell">
+                  <div>#{order.id}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 500, marginTop: '2px' }}>
+                    {new Date(order.created_at).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </td>
+
                   <td>
                     <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.customer_email}</div>

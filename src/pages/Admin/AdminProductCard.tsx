@@ -107,9 +107,21 @@ const AdminProductCard = ({
           </div>
         )}
 
-        <div className="admin-price-row">
-          <span className="admin-price">{p.price} {t('EGP', 'ج.م')}</span>
-          {p.discount_price && <span className="admin-discount">{p.discount_price} {t('EGP', 'ج.م')}</span>}
+       <div className="admin-price-row">
+          {p.discount_price ? (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--primary-500)', fontWeight: 600, textTransform: 'uppercase' }}>Price after sale</span>
+                <span className="admin-price">{p.discount_price} {t('EGP', 'ج.م')}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--primary-500)', fontWeight: 600, textTransform: 'uppercase' }}>Before</span>
+                <span className="admin-discount" style={{ textDecoration: 'line-through', opacity: 0.5 }}>{p.price} {t('EGP', 'ج.م')}</span>
+              </div>
+            </>
+          ) : (
+            <span className="admin-price">{p.price} {t('EGP', 'ج.م')}</span>
+          )}
         </div>
       </div>
 

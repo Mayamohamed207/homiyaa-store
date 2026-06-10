@@ -454,15 +454,15 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             <div className="field">
               <label>Price (EGP)</label>
-              <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input type="number" step="1" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
             <div className="field">
-              <label>Discount Price</label>
-              <input type="number" step="0.01" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <label>Price After Discount</label>
+              <input type="number" step="1" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
             <div className="field full-width">
               <label>Stock Count</label>
-              <input type="number" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input type="number" step="1" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
 
             <div className="field full-width">

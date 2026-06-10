@@ -244,7 +244,7 @@ const ProductCard = ({
             {product.discount_price ? (
               <>
                 <span className="product-price">{product.discount_price} EGP</span>
-                <span className="product-old-price">{product.price} EGP</span>
+                <span className="product-old-price" style={{ textDecoration: 'line-through', opacity: 0.5, fontSize: '0.85em', marginInlineStart: '0.3rem' }}>{product.price} EGP</span>
               </>
             ) : (
               <span className="product-price">{product.price} EGP</span>
