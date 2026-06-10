@@ -43,7 +43,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     try {
       if (isSignUp) {
         await signUp(email.trim(), password, fullName.trim(), phone.trim());
-        toast.success(t('Account created! Please check your email to verify.', 'تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني للتفعيل.'));
+        toast.success(t('Account created!', 'تم إنشاء الحساب!.'));
         onClose();
         setEmail('');
         setPassword('');

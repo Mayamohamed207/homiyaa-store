@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import ProductCard, { Product, ProductColor } from '../ProductCard/ProductCard';
@@ -132,7 +132,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     latest:      language === 'ar' ? 'الأحدث'         : 'Latest',
     popular:     language === 'ar' ? 'الأكثر شعبية'   : 'Popular',
     'price-asc': language === 'ar' ? 'السعر: الأقل'   : 'Price ↑',
-    'price-desc':language === 'ar' ? 'السعر: الأعلى'  : 'Price ↓',
+    'price-desc': language === 'ar' ? 'السعر: الأعلى'  : 'Price ↓',
   }[sortBy];
 
   if (loading) {
@@ -148,8 +148,22 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     <section id="shop" className="product-grid-section">
       <div className="container">
 
+        {/* ── New Categories Title Header (Matches Popular Picks Font & Layout) ── */}
+        <div className="section-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
+          <div className="section-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className="section-title">
+              {language === 'ar' ? 'الأقسام' : 'Categories'}
+            </span>
+            {language === 'ar' ? (
+              <ChevronLeft size={18} className="title-arrow-icon" style={{ color: 'var(--primary-500)' }} />
+            ) : (
+              <ChevronRight size={18} className="title-arrow-icon" style={{ color: 'var(--primary-500)' }} />
+            )}
+          </div>
+        </div>
+
         {/* ── Category pills ── */}
-        <div className="category-pills-row">
+        <div className="category-pills-row" style={{ marginBottom: '2.5rem' }}>
           <button
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => handleCategorySelect('all')}
@@ -177,7 +191,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           ))}
         </div>
 
-        {/* ── Section header ── */}
         <div className="section-header">
           <span className="section-title">
             {language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks'}

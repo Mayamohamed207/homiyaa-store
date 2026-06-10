@@ -6,8 +6,9 @@ import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
 import { Product } from '../../components/ProductCard/ProductCard';
 import { useLanguage } from '../../context/LanguageContext';
-import './AdminDashboard.css';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import './AdminDashboard.css';
 
 interface ProductFormState {
   id?: number;
@@ -78,6 +79,15 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
+
+  const { user } = useAuth();
+  const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+
+  useEffect(() => {
+    if (user?.email && ADMIN_EMAILS.includes(user.email)) {
+      setIsAuthenticated(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isAuthenticated) { 

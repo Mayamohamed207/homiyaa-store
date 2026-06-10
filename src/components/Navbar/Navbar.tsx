@@ -30,8 +30,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
 
   const isRtl = language === 'ar';
 
-  // SECURITY RULE: The Admin Panel option will NEVER render unless the logged-in email is listed here
-  const ADMIN_EMAILS = ['admin@homiyaa.com', 'owner@homiyaa.com']; 
+  const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
   const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
 
   const toggleSearch = () => {
@@ -149,7 +148,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                 {isSearchOpen ? <X className="icon" /> : <Search className="icon" />}
               </motion.button>
               
-              {/* Account Authorization Menu Node Setup - FIXED: Always visible & styled like image_f237e0.png */}
+              {/* Account Authorization Menu Node Setup */}
               <div className="user-profile-relative-wrapper" ref={dropdownRef}>
                 <motion.button
                   whileTap={{ scale: 0.85 }}
@@ -184,7 +183,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                         <span>{t('Favorites', 'قائمة المفضلة')}</span>
                       </button>
 
-                      {/* STRICT GUARD: Admin option is never generated unless email is validated against safe list */}
                       {isAdmin && (
                         <button onClick={() => navigate('/admin')} className="dropdown-item admin-link-item">
                           <ShieldAlert size={16} />
@@ -221,6 +219,25 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                 {isMobileMenuOpen ? <X className="icon" /> : <Menu className="icon" />}
               </motion.button>
             </div>
+          </div>
+        </div>
+
+        {/* ── Sticked Mobile Search Strip (Always visible outside icon drawer on mobile layout) ── */}
+        <div className="mobile-sticky-search-bar">
+          <div className="mobile-search-strip-inner">
+            <Search className="mobile-strip-search-icon" size={16} />
+            <input
+              type="text"
+              className="mobile-strip-search-input"
+              placeholder={t('Search products...', 'ابحث عن المنتجات...')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="mobile-strip-clear-btn" onClick={() => setSearchQuery('')}>
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -265,25 +282,12 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
               transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="navbar-mobile-drawer-container"
             >
-              <div className="mobile-drawer-wrapper">
-                
-                {/* Embedded Mobile Input Field Search Row */}
-                <div className="mobile-search-box-row">
-                  <Search className="mobile-search-box-icon" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder={t('Search...', 'ابحث عن منتجاتك...')} 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                {/* Core Navigation Section Links Buttons */}
+              <div className="mobile-drawer-wrapper">                
                 <button onClick={(e) => handleNavigation(e, 'shop')} className="mobile-drawer-nav-item">
-                  {t('Shop Products Grid', 'تصفح المتجر الرئيسي')}
+                  {t('Shop', 'المتجر')}
                 </button>
                 <button onClick={(e) => handleNavigation(e, 'contact')} className="mobile-drawer-nav-item">
-                  {t('Contact Support', 'اتصل بنا')}
+                  {t('Contact', 'تواصل معنا')}
                 </button>
               </div>
             </motion.div>
