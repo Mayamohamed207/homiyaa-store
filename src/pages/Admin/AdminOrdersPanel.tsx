@@ -119,7 +119,7 @@ const handleDeleteOrder = (orderId: number) => {
           <thead>
             <tr>
               <th>{t('ID', 'الرقم')}</th>
-              <th>{t('Buyer Details', 'بيانات العميل')}</th>
+              <th>{t('Customer Details', 'بيانات العميل')}</th>
               <th>{t('Shipping Address', 'عنوان الشحن')}</th>
               <th>{t('Items', 'المنتجات والطلبات')}</th>
               <th>{t('Total', 'إجمالي الحساب')}</th>
