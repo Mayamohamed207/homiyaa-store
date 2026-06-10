@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
 import './AdminProductCard.css';
 import { Product } from '../../components/ProductCard/ProductCard';
-import { useLanguage } from '../../context/LanguageContext'; // Hooked up context
+import { useLanguage } from '../../context/LanguageContext';
 
 const AdminProductCard = ({
   p,
@@ -13,7 +13,7 @@ const AdminProductCard = ({
   onEdit: (p: Product) => void;
   onDelete: (id: number) => void;
 }) => {
-  const { t } = useLanguage(); // Initialize dynamic translation engine
+  const { t } = useLanguage();
   const images = p.product_images || [];
   const defaultImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -57,8 +57,7 @@ const AdminProductCard = ({
         </div>
         <h4 className="admin-title">{p.name_en}</h4>
         <h4 className="admin-title-ar">{p.name_ar}</h4>
-        
-        {/* Render Saved Variations/Colors Circles below */}
+
         {p.product_colors && p.product_colors.length > 0 && (
           <div className="admin-card-colors" style={{ display: 'flex', gap: '0.35rem', margin: '0.5rem 0' }}>
             {p.product_colors.map((color, idx) => (
@@ -72,8 +71,14 @@ const AdminProductCard = ({
                   borderRadius: '50%',
                   backgroundColor: color.color_code,
                   border: '1px solid #cbd5e1',
+                  cursor: images.length > 1 ? 'pointer' : 'default',
+                  outline: activeImgIndex === idx + 1 ? '2px solid #0f172a' : 'none',
+                  outlineOffset: '2px',
                 }}
                 title={`${color.color_name_en} / ${color.color_name_ar}`}
+                onClick={() => {
+                  if (images[idx + 1]) setActiveImgIndex(idx + 1);
+                }}
               />
             ))}
           </div>

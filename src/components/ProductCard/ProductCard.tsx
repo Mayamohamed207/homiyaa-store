@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +53,9 @@ const ProductCard = ({
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [chosenColorIndex, setChosenColorIndex] = useState<number | null>(null);
 
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
   const name = language === 'ar' ? product.name_ar : product.name_en;
   const category = language === 'ar' ? product.category_ar : product.category_en;
   const images = product.product_images || [];
@@ -65,17 +68,37 @@ const ProductCard = ({
     }
   };
 
-const handleCartClick = () => {
-  if (product.is_sold_out || !onAddToCart) return;
+  const handleCartClick = () => {
+    if (product.is_sold_out || !onAddToCart) return;
+    if (colors.length > 0 && chosenColorIndex === null) {
+      alert(language === 'ar' ? '⚠️ يرجى اختيار لون أولاً!' : '⚠️ Please select a color!');
+      return;
+    }
+    const assignedColor = colors.length > 0
+      ? colors[chosenColorIndex!]
+      : { color_code: '#000000', color_name_en: 'Default', color_name_ar: 'افتراضي' };
+    onAddToCart(product, assignedColor);
+  };
 
-  if (colors.length > 0 && chosenColorIndex === null) {
-    alert(language === 'ar' ? '⚠️ يرجى اختيار لون أولاً!' : '⚠️ Please select a color!');
-    return;
-  }
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
 
-  const assignedColor = colors.length > 0 ? colors[chosenColorIndex!] : { color_code: '#000000', color_name_en: 'Default', color_name_ar: 'افتراضي' };
-  onAddToCart(product, assignedColor);
-};
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (images.length <= 1) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (Math.abs(dx) > 40 && dy < 60) {
+      if (dx < 0) {
+        // swipe left → next
+        setActiveImgIndex(i => (i + 1) % images.length);
+      } else {
+        // swipe right → prev
+        setActiveImgIndex(i => (i - 1 + images.length) % images.length);
+      }
+    }
+  };
 
   return (
     <Card
@@ -83,7 +106,11 @@ const handleCartClick = () => {
       onClick={handleCardRedirection}
       style={{ cursor: isAdminMode ? 'default' : 'pointer' }}
     >
-      <div className="product-image-container">
+      <div
+        className="product-image-container"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {product.is_sold_out && (
           <Badge variant="secondary" className="product-badge sold-out-badge">
             {language === 'ar' ? 'نفذت الكمية' : 'Sold Out'}
@@ -140,7 +167,13 @@ const handleCartClick = () => {
                 aria-label={`Select color ${c.color_name_en}`}
                 onClick={e => {
                   e.stopPropagation();
-                  setChosenColorIndex(chosenColorIndex === idx ? null : idx);
+                  const newIndex = chosenColorIndex === idx ? null : idx;
+                  setChosenColorIndex(newIndex);
+                  if (newIndex !== null && images[newIndex + 1]) {
+                    setActiveImgIndex(newIndex + 1);
+                  } else {
+                    setActiveImgIndex(0);
+                  }
                 }}
               />
             ))}
@@ -172,18 +205,16 @@ const handleCartClick = () => {
               </button>
             </div>
           ) : (
-           <div onClick={e => e.stopPropagation()}>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={product.is_sold_out}
-              // Highlight-start
-              onClick={() => handleCartClick()} 
-              // Highlight-end
-            >
-              <ShoppingCart className="icon" size={18} />
-            </Button>
-          </div>
+            <div onClick={e => e.stopPropagation()}>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={product.is_sold_out}
+                onClick={() => handleCartClick()}
+              >
+                <ShoppingCart className="icon" size={18} />
+              </Button>
+            </div>
           )}
         </div>
       </div>

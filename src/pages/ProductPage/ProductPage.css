@@ -80,7 +80,13 @@
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
   box-sizing: border-box;
+}
+
+.pp-main-image-wrap:active {
+  cursor: grabbing;
 }
 
 .pp-main-image {
@@ -89,6 +95,7 @@
   object-fit: cover;
   display: block;
   pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 /* Badges */
@@ -161,6 +168,11 @@
 .pp-arrow-next { right: 10px; }
 [dir="rtl"] .pp-arrow-prev { left: auto; right: 10px; }
 [dir="rtl"] .pp-arrow-next { right: auto; left: 10px; }
+
+/* Hide arrows on mobile — swipe handles it */
+@media (max-width: 767px) {
+  .pp-arrow { display: none; }
+}
 
 /* Dots */
 .pp-dots {
@@ -395,7 +407,6 @@
     box-sizing: border-box;
   }
 
-  /* Extra space so content isn't hidden behind fixed bar */
   .pp-details-col { padding-bottom: 80px; }
 }
 

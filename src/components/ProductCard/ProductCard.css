@@ -228,3 +228,53 @@
   border-color: var(--primary-300) !important;
   box-shadow: var(--shadow-sm);
 }
+/* ── Swipe-enabled image container ── */
+.product-image-container {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+.product-image-container:active {
+  cursor: grabbing;
+}
+
+.product-image {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* ── Image dots ── */
+.card-image-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+
+.image-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.image-dot.active {
+  background: #ffffff;
+  width: 14px;
+  border-radius: 4px;
+}

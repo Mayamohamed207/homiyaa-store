@@ -18,7 +18,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [sortBy, setSortBy] = useState<SortOption>('latest');
 
   useEffect(() => {
     const loadStoreProducts = async () => {
@@ -152,8 +152,8 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
               value={sortBy}
               onChange={e => setSortBy(e.target.value as SortOption)}
             >
-              <option value="popular">{language === 'ar' ? 'الشعبية أولاً' : 'Popular First'}</option>
               <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest Arrivals'}</option>
+              <option value="popular">{language === 'ar' ? 'الشعبية أولاً' : 'Popular First'}</option>
               <option value="price-asc">{language === 'ar' ? 'السعر: من الأقل للأعلى' : 'Price: Low to High'}</option>
               <option value="price-desc">{language === 'ar' ? 'السعر: من الأعلى للأقل' : 'Price: High to Low'}</option>
             </select>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react'; 
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -43,8 +43,8 @@ const ProductPage = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
 
-  const touchStartX = { current: 0 };
-  const touchStartY = { current: 0 };
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
 
   const isRTL = language === 'ar';
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -92,7 +92,7 @@ const ProductPage = () => {
   const colors = product.product_colors || [];
   const currentImage = images.length > 0 ? images[activeIdx].image_url : FALLBACK_IMAGE;
   const mainProductCartImage = images.length > 0 ? images[0].image_url : FALLBACK_IMAGE;
-  
+
   const name = isRTL ? product.name_ar : product.name_en;
   const category = isRTL ? product.category_ar : product.category_en;
   const description = isRTL ? product.description_ar : product.description_en;
@@ -246,7 +246,7 @@ const ProductPage = () => {
             {colors.length > 0 && (
               <div className="pp-colors-section">
                 <p className="pp-section-label">
-                  {isRTL ? 'اختر اللون' : 'Select Color'}
+                  {isRTL ? ' اختر اللون / الشكل' : 'Select Color/Shape'}
                   {selectedColor !== null && (
                     <span className="pp-selected-color-name">
                       {': '}
@@ -260,7 +260,15 @@ const ProductPage = () => {
                       key={idx}
                       className={`pp-color-dot ${selectedColor === idx ? 'selected' : ''}`}
                       style={{ backgroundColor: c.color_code }}
-                      onClick={() => setSelectedColor(selectedColor === idx ? null : idx)}
+                      onClick={() => {
+                        const newIndex = selectedColor === idx ? null : idx;
+                        setSelectedColor(newIndex);
+                        if (newIndex !== null && images[newIndex + 1]) {
+                          setActiveIdx(newIndex + 1);
+                        } else {
+                          setActiveIdx(0);
+                        }
+                      }}
                       title={isRTL ? c.color_name_ar : c.color_name_en}
                     />
                   ))}
