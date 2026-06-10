@@ -133,16 +133,9 @@ const handleDeleteOrder = (orderId: number) => {
               return (
                 <tr key={order.id}>
 
-                <td className="order-id-cell">
-                  <div>#{order.id}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 500, marginTop: '2px' }}>
-                    {new Date(order.created_at).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </div>
-                </td>
+               <td className="order-id-cell" style={{ whiteSpace: 'nowrap' }}>
+                    #{order.id}-{new Date(order.created_at).getMonth() + 1}-{new Date(order.created_at).getDate()}-{new Date(order.created_at).getFullYear()}
+                  </td>
 
                   <td>
                     <div style={{ fontWeight: 600 }}>{order.customer_name}</div>

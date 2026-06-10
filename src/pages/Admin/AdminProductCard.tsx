@@ -52,9 +52,9 @@ const AdminProductCard = ({
       >
         <img src={currentImageUrl} alt={t(p.name_en, p.name_ar)} />
        <div className="admin-badges">
-          {p.is_popular && <span className="badge pop">{t('Popular', 'رائج')}</span>}
+          {p.is_popular && <span className="badge pop">{t('Best Selling', 'الأكثر مبيعًا')}</span>}
           {p.is_sold_out && <span className="badge sold">{t('Sold Out', 'نفد من المخزون')}</span>}
-          {p.is_new_arrival && <span className="badge new">{t('New Arrival', 'وصل حديثاً')}</span>}
+          {p.is_new_arrival && <span className="badge pop">{t('New Arrival', 'وصل حديثاً')}</span>}
         </div>
         {images.length > 1 && (
           <div className="card-image-dots">

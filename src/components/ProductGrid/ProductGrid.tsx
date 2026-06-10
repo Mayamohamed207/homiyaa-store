@@ -134,7 +134,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
   const sortLabel = {
     latest:      language === 'ar' ? 'الأحدث'         : 'Latest',
-    popular:     language === 'ar' ? 'الأكثر شعبية'   : 'Popular',
+    popular:     language === 'ar' ? 'الأكثر مبيعاً'   : 'Best Selling',
     'price-asc': language === 'ar' ? 'السعر: الأقل'   : 'Price ↑',
     'price-desc': language === 'ar' ? 'السعر: الأعلى'  : 'Price ↓',
   }[sortBy];
@@ -228,7 +228,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
               onChange={e => setSortBy(e.target.value as SortOption)}
             >
               <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest'}</option>
-              <option value="popular">{language === 'ar' ? 'الأكثر شعبية' : 'Popular'}</option>
+              <option value="popular">{language === 'ar' ? 'الأكثر مبيعاً' : 'Best Selling'}</option>
               <option value="price-asc">{language === 'ar' ? 'السعر: الأقل للأعلى' : 'Price: Low to High'}</option>
               <option value="price-desc">{language === 'ar' ? 'السعر: الأعلى للأقل' : 'Price: High to Low'}</option>
             </select>

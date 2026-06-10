@@ -515,7 +515,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             <div className="checkbox-field">
               <input type="checkbox" id="popular" checked={formData.is_popular} onChange={e => setFormData({ ...formData, is_popular: e.target.checked })} />
-              <label htmlFor="popular">Feature in Popular Trends</label>
+              <label htmlFor="popular">Feature as Best Selling</label>
             </div>
             <div className="checkbox-field">
               <input type="checkbox" id="soldout" checked={formData.is_sold_out} onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })} />

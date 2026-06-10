@@ -169,7 +169,7 @@ const ProductCard = ({
         )}
         {product.is_popular && !product.is_sold_out && (
           <Badge variant="primary" className="product-badge popular-badge">
-            {language === 'ar' ? 'شائع' : 'Popular'}
+            {language === 'ar' ? 'الأكثر مبيعاً' : 'Best Selling'}
           </Badge>
         )}
 
