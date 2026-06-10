@@ -210,7 +210,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                 {cartCount > 0 && <span className="navbar-cart-badge">{cartCount}</span>}
               </motion.button>
               
-              {/* Triple Bar Hamburger Trigger Display Element Button for Small Screen Mobile Viewports */}
               <motion.button 
                 whileTap={{ scale: 0.85 }}
                 className="navbar-mobile-menu"

@@ -327,7 +327,6 @@ html[dir="rtl"] .mobile-drawer-nav-item { text-align: right; }
   color: var(--primary-900);
 }
 
-/* Mobile persistent search strip */
 .mobile-search-strip {
   display: none;
   width: 100%;

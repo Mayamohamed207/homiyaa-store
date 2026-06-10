@@ -1,10 +1,26 @@
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, History } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import './Hero.css';
 
 const Hero = () => {
   const { t, isRtl } = useLanguage();
+  const navigate = useNavigate();
+
+  const handleSalesClick = () => {
+    // 1. Instantly focus scroll alignment onto the products grid section
+    const element = document.getElementById('shop');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // 2. Fire custom window event to switch store filters directly to sales view
+    setTimeout(() => {
+      const event = new CustomEvent('storeCategoryChanged', { detail: '__sales__' });
+      window.dispatchEvent(event);
+    }, 100);
+  };
 
   return (
     <section className="hero">
@@ -63,11 +79,9 @@ const Hero = () => {
         >
           <button
             className="hero-cta"
-            onClick={() => {
-              document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={handleSalesClick}
           >
-            <span>{t('Shop Now', 'تسوّق الآن')}</span>
+            <span>{t('See Our Sales', 'شاهد عروضنا')}</span>
             <ArrowRight
               className="icon"
               style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }}
@@ -76,11 +90,11 @@ const Hero = () => {
 
           <button
             className="hero-cta-outline"
-            onClick={() => {
-              document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            onClick={() => navigate('/account')}
           >
-            {t('Explore', 'استكشف')}
+            <History size={14} />
+            <span>{t('Order History', 'سجل الطلبات')}</span>
           </button>
         </motion.div>
       </div>

@@ -106,6 +106,9 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
     if (selectedCategory === '__wishlist__') {
       result = result.filter(item => wishlistIds.has(item.id));
+    } else if (selectedCategory === '__sales__') {
+      // Filters for products that have a non-null, valid discount price configured
+      result = result.filter(item => item.discount_price !== null && item.discount_price > 0);
     } else if (selectedCategory !== 'all') {
       result = result.filter(
         item => item.category_en.toLowerCase() === selectedCategory.toLowerCase()
@@ -148,7 +151,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     <section id="shop" className="product-grid-section">
       <div className="container">
 
-        {/* ── New Categories Title Header (Matches Popular Picks Font & Layout) ── */}
+        {/* Categories Title Header */}
         <div className="section-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
           <div className="section-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span className="section-title">
@@ -162,13 +165,20 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           </div>
         </div>
 
-        {/* ── Category pills ── */}
+        {/* Category pills */}
         <div className="category-pills-row" style={{ marginBottom: '2.5rem' }}>
           <button
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => handleCategorySelect('all')}
           >
             {language === 'ar' ? 'الكل' : 'All'}
+          </button>
+
+          <button
+            className={`category-pill ${selectedCategory === '__sales__' ? 'active' : ''}`}
+            onClick={() => handleCategorySelect('__sales__')}
+          >
+            {language === 'ar' ? '🏷️ التخفيضات' : '🏷️ Sales'}
           </button>
 
           {user && (
@@ -193,7 +203,10 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
         <div className="section-header">
           <span className="section-title">
-            {language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks'}
+            {selectedCategory === '__sales__' 
+              ? (language === 'ar' ? 'العروض الحالية' : 'Active Deals')
+              : (language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks')
+            }
           </span>
           <div className="sort-wrapper">
             <button className="sort-btn">
@@ -212,7 +225,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           </div>
         </div>
 
-        {/* ── Grid or empty state ── */}
+        {/* Grid or empty state */}
         {processedProducts.length === 0 ? (
           <div className="empty-store-state">
             <h3>{language === 'ar' ? 'لم يتم العثور على نتائج' : 'No products found'}</h3>
