@@ -35,6 +35,28 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     loadStoreProducts();
   }, []);
 
+  // Listen for category selection events published by the Footer layout
+  useEffect(() => {
+    const handleGlobalCategoryChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setSelectedCategory(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('storeCategoryChanged', handleGlobalCategoryChange);
+    return () => {
+      window.removeEventListener('storeCategoryChanged', handleGlobalCategoryChange);
+    };
+  }, []);
+
+  // Sync dropdown shifts outwards to footer layout references
+  const handleDropdownCategorySelect = (value: string) => {
+    setSelectedCategory(value);
+    const event = new CustomEvent('storeCategoryChanged', { detail: value });
+    window.dispatchEvent(event);
+  };
+
   const handleAddToCartMapping = (item: Product, chosenColor: ProductColor) => {
     const activePrice = item.discount_price ? item.discount_price : item.price;
     const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
@@ -111,7 +133,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             <select
               className="store-control-select"
               value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
+              onChange={e => handleDropdownCategorySelect(e.target.value)}
             >
               <option value="all">{language === 'ar' ? 'جميع المنتجات' : 'All Products'}</option>
               {uniqueCategories.map(cat => (
@@ -149,7 +171,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             {(selectedCategory !== 'all' || searchQuery !== '') && (
               <button
                 className="reset-filters-btn"
-                onClick={() => { setSelectedCategory('all'); setSortBy('popular'); }}
+                onClick={() => { handleDropdownCategorySelect('all'); setSortBy('popular'); }}
               >
                 {language === 'ar' ? 'إعادة تعيين' : 'Reset Filters'}
               </button>

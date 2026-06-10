@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import { useLanguage } from '../../context/LanguageContext'; // Hooked up context
 import './AdminOrdersPanel.css';
 
 export interface CustomerOrder {
@@ -44,6 +45,8 @@ const AdminOrdersPanel = ({
   loadingOrders: boolean;
   onRefresh: () => void;
 }) => {
+  const { t } = useLanguage(); // Initialize dynamic translation engine
+
   const handleUpdateStatus = async (orderId: number, currentStatus: string) => {
     const next = nextStatus(currentStatus);
     const { error } = await supabase.from('orders').update({ status: next }).eq('id', orderId);
@@ -51,19 +54,30 @@ const AdminOrdersPanel = ({
   };
 
   const handleDeleteOrder = async (orderId: number) => {
-    if (!confirm(`Delete order #${orderId}? This cannot be undone.`)) return;
+    if (!confirm(t(`Delete order #${orderId}? This cannot be undone.`, `هل أنت متأكد من حذف الطلب رقم #${orderId}؟ لا يمكن التراجع عن هذا الإجراء.`))) return;
     const { error } = await supabase.from('orders').delete().eq('id', orderId);
     if (!error) setOrders(prev => prev.filter(o => o.id !== orderId));
+  };
+
+  // Helper method to resolve localized tracking status dynamically
+  const translateStatus = (status: string) => {
+    switch (status) {
+      case 'Pending': return t('Pending', 'قيد الانتظار');
+      case 'Confirmed': return t('Confirmed', 'تم التأكيد');
+      case 'Shipped': return t('Shipped', 'تم الشحن');
+      case 'Completed': return t('Completed', 'مكتمل');
+      default: return status;
+    }
   };
 
   return (
     <div className="orders-panel">
       <div className="orders-panel-header">
         <div className="orders-panel-title">
-          <h2>Real-time Delivery Logs</h2>
-          <p>Click a status badge to move its status</p>
+          <h2>{t('View Your Orders', 'عرض طلبات العملاء')}</h2>
+          <p>{t('Click a status badge to move its status', 'اضغط على شارة الحالة لتغيير مرحلة الطلب مباشرة')}</p>
         </div>
-        <button onClick={onRefresh} className="refresh-logs-btn">
+        <button onClick={onRefresh} className="refresh-logs-btn" title={t('Refresh logs', 'تحديث السجلات')}>
           <RefreshCw size={20} style={{ animation: loadingOrders ? 'spin 1s linear infinite' : 'none' }} />
         </button>
       </div>
@@ -72,13 +86,13 @@ const AdminOrdersPanel = ({
         <table className="orders-data-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Buyer Details</th>
-              <th>Shipping Address</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Delete</th>
+              <th>{t('ID', 'الرقم')}</th>
+              <th>{t('Buyer Details', 'بيانات العميل')}</th>
+              <th>{t('Shipping Address', 'عنوان الشحن')}</th>
+              <th>{t('Items', 'المنتجات والطلبات')}</th>
+              <th>{t('Total', 'إجمالي الحساب')}</th>
+              <th>{t('Status', 'الحالة')}</th>
+              <th>{t('Delete', 'حذف')}</th>
             </tr>
           </thead>
           <tbody>
@@ -100,14 +114,16 @@ const AdminOrdersPanel = ({
                     <ul className="order-items-list">
                       {(order.items || []).map((item: any, idx: number) => (
                         <li key={idx}>
-                          {item.name_en || 'Product'} ({item.colorChosen || 'Default'}) x{item.quantity}
+                          {t(item.name_en, item.name_ar) || t('Product', 'منتج')} ({t(item.colorChosen, item.colorChosenAr || item.colorChosen) || t('Default', 'الافتراضي')}) x{item.quantity}
                         </li>
                       ))}
                     </ul>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 700 }}>{order.total} EGP</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Delivery: {order.shipping_cost} EGP</div>
+                    <div style={{ fontWeight: 700 }}>{order.total} {t('EGP', 'ج.م')}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      {t('Delivery:', 'الشحن:')} {order.shipping_cost} {t('EGP', 'ج.م')}
+                    </div>
                   </td>
                   <td>
                     <button
@@ -117,12 +133,13 @@ const AdminOrdersPanel = ({
                         background: statusStyle.bg,
                         color: statusStyle.color,
                       }}
+                      title={t('Click to advance status', 'اضغط لتحديث الحالة للمرحلة التالية')}
                     >
-                      {order.status}
+                      {translateStatus(order.status)}
                     </button>
                   </td>
                   <td>
-                    <button onClick={() => handleDeleteOrder(order.id)} title="Delete this order" className="order-action-delete-btn">
+                    <button onClick={() => handleDeleteOrder(order.id)} title={t('Delete this order', 'حذف هذا الطلب نهائياً')} className="order-action-delete-btn">
                       <Trash2 size={15} />
                     </button>
                   </td>
@@ -133,7 +150,7 @@ const AdminOrdersPanel = ({
         </table>
 
         {orders.length === 0 && (
-          <div className="orders-empty-state">No orders yet.</div>
+          <div className="orders-empty-state">{t('No orders yet.', 'لا توجد طلبات مسجلة حتى الآن.')}</div>
         )}
       </div>
     </div>

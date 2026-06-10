@@ -94,7 +94,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .admin-header h2 {
@@ -122,6 +122,66 @@
   background: #1e293b;
 }
 
+/* --- SIDE-BY-SIDE GRID CONTROLS (FIXED FOR MOBILE DISPLAY) --- */
+.admin-filter-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.filter-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-select-wrapper .select-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+html[dir="rtl"] .filter-select-wrapper .select-icon {
+  left: auto;
+  right: 0.75rem;
+}
+
+.filter-select-wrapper select {
+  width: 100%;
+  padding: 0.625rem 0.5rem 0.625rem 2rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[dir="rtl"] .filter-select-wrapper select {
+  padding: 0.625rem 2rem 0.625rem 0.5rem;
+}
+
+.admin-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+  font-size: 1rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+/* --- INVENTORY GRID & FORM LAYOUTS --- */
 .product-admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -627,10 +687,6 @@
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

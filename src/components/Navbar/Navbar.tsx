@@ -1,4 +1,4 @@
-import { useState, Dispatch, SetStateAction } from 'react';
+import { useState, Dispatch, SetStateAction, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, User, Menu, Search, X, Globe } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -25,12 +25,24 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
     }
   };
 
+  // Broadcast search query variations globally so Admin views can tap into it
+  useEffect(() => {
+    const event = new CustomEvent('adminSearchChanged', { detail: searchQuery });
+    window.dispatchEvent(event);
+  }, [searchQuery]);
+
   const handleMobileScroll = (targetId: string) => {
     setIsMobileMenuOpen(false);
     setTimeout(() => {
       const element = document.getElementById(targetId);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback or redirection logic if navigation elements don't exist in current admin view
+        const isAdmin = window.location.pathname.includes('/admin');
+        if (isAdmin) {
+          window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'products' }));
+        }
       }
     }, 150);
   };
@@ -49,6 +61,13 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
             <motion.div
               whileTap={{ scale: 0.98 }}
               className="navbar-logo-container"
+              onClick={() => {
+                if (window.location.pathname.includes('/admin')) {
+                  window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'dashboard' }));
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
             >
               <img 
                 src="/logo.jpeg" 
@@ -62,8 +81,19 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
             </motion.div>
 
             <div className="navbar-links">
-              <a href="#shop" className="navbar-link">{t('Shop', 'المتجر')}</a>
-              <a href="#contact" className="navbar-link">{t('Contact', 'اتصل بنا')}</a>
+              <a 
+                href="#shop" 
+                className="navbar-link"
+                onClick={(e) => {
+                  if (window.location.pathname.includes('/admin')) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'products' }));
+                  }
+                }}
+              >
+                {t('Shop', 'المتجر')}
+              </a>
+              <a href="#contact" className="navbar-link">{t('Contact', 'تواصل معنا')}</a>
             </div>
 
             <div className="navbar-actions">
@@ -176,7 +206,7 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
                   className="mobile-navbar-link-btn" 
                   onClick={() => handleMobileScroll('contact')}
                 >
-                  {t('Contact', 'اتصل بنا')}
+                  {t('Contact', 'تواصل معنا')}
                 </button>
               </div>
             </motion.div>
