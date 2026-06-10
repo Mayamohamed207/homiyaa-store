@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Plus, ArrowLeft, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal } from 'lucide-react';
+import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs'; 
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
@@ -380,7 +380,6 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       ) : (
         <form onSubmit={handleSaveProduct} className="product-form">
           <div className="form-header">
-            <button type="button" onClick={() => setIsFormOpen(false)} className="back-btn"><ArrowLeft size={16} /> {t('Back', 'رجوع')}</button>
             <h3>{editMode ? t('Edit Product', 'تعديل المنتج') : t('Add Product', 'اضافة منتج جديدة')}</h3>
           </div>
 
@@ -458,17 +457,22 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 {colors.map(color => (
                   <div key={color.id} className="color-input-row-modern">
                     <div className="color-drag-handle" style={{ cursor: 'grab' }}><GripHorizontal size={16} /></div>
+                    
                     <div className="color-text-inputs-inputs-wrapper">
                       <input type="text" placeholder="English Label" value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
                       <input type="text" placeholder="اسم اللون بالعربي" value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} />
                     </div>
-                    <div className="color-picker-swatch-container">
-                      <label className="color-swatch-label" style={{ backgroundColor: color.color_code }}>
-                        <input type="color" className="hidden-color-input" value={color.color_code} onChange={e => handleColorChange(color.id, 'color_code', e.target.value)} />
-                      </label>
-                      <span className="color-code-text">{color.color_code}</span>
+                    
+                    <div className="color-picker-and-delete">
+                      <div className="color-picker-swatch-container">
+                        <label className="color-swatch-label" style={{ backgroundColor: color.color_code }}>
+                          <input type="color" className="hidden-color-input" value={color.color_code} onChange={e => handleColorChange(color.id, 'color_code', e.target.value)} />
+                        </label>
+                        <span className="color-code-text">{color.color_code}</span>
+                      </div>
+                      <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(color.id)}><Trash2 size={16} /></button>
                     </div>
-                    <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(color.id)}><Trash2 size={16} /></button>
+
                   </div>
                 ))}
               </ReactSortable>
@@ -486,8 +490,8 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="save-submit-btn" disabled={isUploading}>{isUploading ? 'Saving...' : 'Save Product'}</button>
-            <button type="button" className="cancel-btn" onClick={() => setIsFormOpen(false)}>Cancel</button>
+            <button type="button" className="cancel-btn" onClick={() => setIsFormOpen(false)}>{t('Cancel', 'إلغاء')}</button>
+            <button type="submit" className="save-submit-btn" disabled={isUploading}>{isUploading ? 'Saving...' : t('Save Product', 'حفظ المنتج')}</button>
           </div>
         </form>
       )}
