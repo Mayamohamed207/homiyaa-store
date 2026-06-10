@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Plus, ArrowLeft, FolderPlus, List, Image, Palette, Loader2, X, ClipboardList, Package, Trash2, Layers, ArrowUpDown } from 'lucide-react';
+import { Plus, ArrowLeft, FolderPlus, List, Image, Palette, Loader2, X, ClipboardList, Package, Trash2, Layers, ArrowUpDown, GripHorizontal } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs'; 
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
 import { Product } from '../../components/ProductCard/ProductCard';
 import { useLanguage } from '../../context/LanguageContext';
 import './AdminDashboard.css';
+import toast from 'react-hot-toast';
 
 interface ProductFormState {
   id?: number;
@@ -26,6 +27,7 @@ interface ProductFormState {
 }
 
 interface ColorInput {
+  id: string;
   color_name_en: string;
   color_name_ar: string;
   color_code: string;
@@ -70,7 +72,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   const [isCustomCategory, setIsCustomCategory] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [formImages, setFormImages] = useState<UnifiedImage[]>([]);
-  const [colors, setColors] = useState<ColorInput[]>([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+  const [colors, setColors] = useState<ColorInput[]>([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
   const [formData, setFormData] = useState<ProductFormState>(initialFormState);
 
   // Global & Dropdown state controls
@@ -148,11 +150,15 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ADMIN_PASSWORD) {
-      alert(t('Admin password is not configured. Set VITE_ADMIN_PASSWORD.', 'كلمة مرور المسؤول غير مهيأة في النظام.'));
+      toast.error(t('Admin password is not configured. Set VITE_ADMIN_PASSWORD.', 'كلمة مرور المسؤول غير مهيأة في النظام.'));
       return;
     }
-    if (password === ADMIN_PASSWORD) setIsAuthenticated(true);
-    else alert(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      toast.success(t('Welcome back, Admin! 👋', 'مرحباً بك مجدداً أيها المسؤول! 👋'));
+    } else {
+      toast.error(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
+    }
     setPassword('');
   };
 
@@ -179,20 +185,18 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   };
 
   const handleAddColorRow = () =>
-    setColors([...colors, { color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+    setColors([...colors, { id: `c-${Date.now()}-${Math.random()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
 
-  const handleRemoveColorRow = (index: number) => {
+  const handleRemoveColorRow = (id: string) => {
     if (colors.length === 1) {
-      setColors([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+      setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
     } else {
-      setColors(colors.filter((_, i: number) => i !== index));
+      setColors(colors.filter(c => c.id !== id));
     }
   };
 
-  const handleColorChange = (index: number, field: keyof ColorInput, value: string) => {
-    const updated = [...colors];
-    updated[index][field] = value;
-    setColors(updated);
+  const handleColorChange = (id: string, field: keyof Omit<ColorInput, 'id'>, value: string) => {
+    setColors(colors.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
   const getCleanPayload = () => {
@@ -269,11 +273,11 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
       formImages.forEach((img: UnifiedImage) => { if (img.type === 'new') URL.revokeObjectURL(img.url); });
       setIsFormOpen(false);
       setFormImages([]);
-      setColors([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+      setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
       fetchProducts();
-      alert(t('Product saved successfully! ✅', 'تم حفظ المنتج بنجاح! ✅'));
+      toast.success(t('Product saved successfully! ✅', 'تم حفظ المنتج بنجاح! ✅'));
     } catch (err: any) {
-      alert(`Error: ${err.message || err}`);
+      toast.error(`Error: ${err.message || err}`);
     } finally {
       setIsUploading(false);
     }
@@ -289,7 +293,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
     setIsCustomCategory(false);
     setFormData(initialFormState);
     setFormImages([]);
-    setColors([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+    setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
     setIsFormOpen(true);
   };
 
@@ -325,24 +329,33 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
         .eq('product_id', product.id);
 
       if (!error && fetchedColors && fetchedColors.length > 0) {
-        setColors(fetchedColors.map(c => ({
+        setColors(fetchedColors.map((c, i) => ({
+          id: `c-existing-${i}-${Math.random()}`,
           color_name_en: c.color_name_en || '',
           color_name_ar: c.color_name_ar || '',
           color_code: c.color_code || '#000000'
         })));
       } else {
-        setColors([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+        setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
       }
     } else {
-      setColors([{ color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+      setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
     }
     setIsFormOpen(true);
   };
 
   const handleDeleteProduct = async (id: number) => {
     if (confirm(t('Are you sure you want to delete this product?', 'هل أنت متأكد من حذف هذا المنتج؟'))) {
-      await supabase.from('products').delete().eq('id', id);
-      fetchProducts();
+      const deleteToast = toast.loading(t('Deleting item...', 'جاري الحذف...'));
+      try {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
+        
+        toast.success(t('Product deleted successfully.', 'تم حذف المنتج بنجاح.'), { id: deleteToast });
+        fetchProducts();
+      } catch (err: any) {
+        toast.error(t('Failed to delete product.', 'فشل في حذف المنتج.'), { id: deleteToast });
+      }
     }
   };
 
@@ -596,6 +609,16 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
               />
             </div>
 
+            <div className="field full-width">
+              <label>{t('Description (EN)', 'الوصف (بالإنجليزي)')}</label>
+              <textarea disabled={isUploading} value={formData.description_en || ''} onChange={e => setFormData({ ...formData, description_en: e.target.value })} />
+            </div>
+
+            <div className="field full-width">
+              <label>{t('Description (AR)', 'الوصف (بالعربي)')}</label>
+              <textarea disabled={isUploading} value={formData.description_ar || ''} onChange={e => setFormData({ ...formData, description_ar: e.target.value })} dir="rtl" />
+            </div>
+
             <div className="field full-width section-block">
               <span className="section-title"><Image size={16} /> {t('Asset Media Manager', 'إدارة صور المنتج')}</span>
               <p className="file-hint-text">{t('Hold and drag thumbnails below to rearrange priority listing sequence.', 'اضغط واسحب الصور المصغرة بالأسفل لترتيب تسلسل العرض للعملاء.')}</p>
@@ -624,39 +647,42 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
             </div>
 
             <div className="field full-width section-block">
-              <span className="section-title"><Palette size={16} /> {t('Attribute Variations (Colors - Optional)', 'تخصيص الألوان المتاحة (اختياري)')}</span>
-              {colors.map((color: ColorInput, index: number) => (
-                <div key={index} className="color-input-row-modern">
-                  <div className="color-text-inputs-inputs-wrapper">
-                    <input type="text" placeholder={t('English Label', 'اسم اللون بالإنجليزي')} disabled={isUploading} value={color.color_name_en} onChange={e => handleColorChange(index, 'color_name_en', e.target.value)} />
-                    <input type="text" placeholder={t('Arabic Label', 'اسم اللون بالعربي')} disabled={isUploading} value={color.color_name_ar} onChange={e => handleColorChange(index, 'color_name_ar', e.target.value)} dir="rtl" />
+              <span className="section-title"><Palette size={16} /> {t('Add Colors', ' الألوان المتاحة')}</span>
+              <p className="file-hint-text">{t('Hold and drag handle rows below to swap color sequence configurations.', 'اضغط واسحب أيقونة الترتيب بالأسفل لتغيير تسلسل عرض الألوان.')}</p>
+              
+              <ReactSortable
+                list={colors}
+                setList={(newState) => setColors(newState)}
+                animation={200}
+                handle=".color-drag-handle"
+                className="colors-sortable-container"
+              >
+                {colors.map((color: ColorInput) => (
+                  <div key={color.id} className="color-input-row-modern">
+                    <button type="button" className="color-drag-handle" disabled={isUploading} style={{ cursor: 'grab', background: 'none', border: 'none', display: 'flex', alignItems: 'center', padding: '0 4px', color: '#64748b' }}>
+                      <GripHorizontal size={16} />
+                    </button>
+                    <div className="color-text-inputs-inputs-wrapper">
+                      <input type="text" placeholder={t('English Label', 'اسم اللون بالإنجليزي')} disabled={isUploading} value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
+                      <input type="text" placeholder={t('Arabic Label', 'اسم اللون بالعربي')} disabled={isUploading} value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} dir="rtl" />
+                    </div>
+                    <div className="color-picker-swatch-container">
+                      <label className="color-swatch-label" style={{ backgroundColor: color.color_code || '#000000' }}>
+                        <input type="color" className="hidden-color-input" disabled={isUploading} value={color.color_code || '#000000'} onChange={e => handleColorChange(color.id, 'color_code', e.target.value)} />
+                      </label>
+                      <span className="color-code-text">{color.color_code.toUpperCase()}</span>
+                    </div>
+                    <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(color.id)} disabled={isUploading}>
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <div className="color-picker-swatch-container">
-                    <label className="color-swatch-label" style={{ backgroundColor: color.color_code || '#000000' }}>
-                      <input type="color" className="hidden-color-input" disabled={isUploading} value={color.color_code || '#000000'} onChange={e => handleColorChange(index, 'color_code', e.target.value)} />
-                    </label>
-                    <span className="color-code-text">{color.color_code.toUpperCase()}</span>
-                  </div>
-                  <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(index)} disabled={isUploading}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+                ))}
+              </ReactSortable>
               <div style={{ marginTop: '1rem' }}>
                 <button type="button" className="add-color-btn" onClick={handleAddColorRow} disabled={isUploading}>
-                  {t('+ Add Variant Row', '+ إضافة لون جديد')}
+                  {t('+ Add Color', '+ إضافة لون جديد')}
                 </button>
               </div>
-            </div>
-
-            <div className="field full-width">
-              <label>{t('Description (EN)', 'الوصف (بالإنجليزي)')}</label>
-              <textarea disabled={isUploading} value={formData.description_en || ''} onChange={e => setFormData({ ...formData, description_en: e.target.value })} />
-            </div>
-
-            <div className="field full-width">
-              <label>{t('Description (AR)', 'الوصف (بالعربي)')}</label>
-              <textarea disabled={isUploading} value={formData.description_ar || ''} onChange={e => setFormData({ ...formData, description_ar: e.target.value })} dir="rtl" />
             </div>
 
             <div className="checkbox-field">

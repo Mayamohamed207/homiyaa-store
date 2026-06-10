@@ -5,6 +5,7 @@ import { supabase } from '../../supabaseClient';
 import emailjs from '@emailjs/browser';
 import { X, Trash2, ShoppingBag, Loader2, ShoppingCart } from 'lucide-react';
 import './CartDrawer.css';
+import toast from 'react-hot-toast';
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -159,13 +160,17 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       setAddress('');
       onClose();
 
-      alert(
+      toast.success(
         language === 'ar'
-          ? `تم تسجيل طلبك بنجاح! ✅ تحقق من بريدك الإلكتروني لتفاصيل الطلب.`
-          : `Order placed successfully! ✅ Check your email for order details.`
-      );
+            ? 'تم تسجيل طلبك بنجاح! تحقق من بريدك الإلكتروني'
+            : 'Order placed! Check your email for details'
+        );
     } catch (err: any) {
-      alert(`Checkout Error: ${err.message}`);
+      toast.error(
+        language === 'ar'
+            ? `حدث خطأ: ${err.message}`
+            : `Checkout failed: ${err.message}`
+        );
     } finally {
       setLoading(false);
     }

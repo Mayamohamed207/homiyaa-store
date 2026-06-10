@@ -6,6 +6,7 @@ import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import './ProductPage.css';
+import toast from 'react-hot-toast';
 
 interface ProductColor {
   color_code: string;
@@ -105,7 +106,7 @@ const ProductPage = () => {
     if (!addToCart || product.is_sold_out) return;
 
     if (colors.length > 0 && selectedColor === null) {
-      alert(isRTL ? '⚠️ يجب اختيار لون للمنتج أولاً قبل إضافته إلى السلة!' : '⚠️ Please pick a color option on this item configuration layout grid before checking out!');
+      toast.error(isRTL ? '⚠️ يجب اختيار لون للمنتج أولاً قبل إضافته إلى السلة!' : '⚠️ Please pick a color option on this item configuration layout grid before checking out!');
       return;
     }
 

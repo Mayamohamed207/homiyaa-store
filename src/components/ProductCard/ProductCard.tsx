@@ -6,6 +6,7 @@ import Card from '../ui/Card/Card';
 import Badge from '../ui/Badge/Badge';
 import Button from '../ui/Button/Button';
 import './ProductCard.css';
+import toast from 'react-hot-toast';
 
 export interface ProductColor {
   color_code: string;
@@ -71,7 +72,14 @@ const ProductCard = ({
   const handleCartClick = () => {
     if (product.is_sold_out || !onAddToCart) return;
     if (colors.length > 0 && chosenColorIndex === null) {
-      alert(language === 'ar' ? '⚠️ يرجى اختيار لون أولاً!' : '⚠️ Please select a color!');
+      toast.error(
+        language === 'ar'
+          ? '⚠️ يرجى اختيار لون أولاً!'
+          : '⚠️ Please select a color!'
+      );
+      toast.success(
+      language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart'
+    );
       return;
     }
     const assignedColor = colors.length > 0
