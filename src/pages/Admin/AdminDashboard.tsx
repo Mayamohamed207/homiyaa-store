@@ -75,7 +75,6 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   const [colors, setColors] = useState<ColorInput[]>([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
   const [formData, setFormData] = useState<ProductFormState>(initialFormState);
 
-  // Global & Dropdown state controls
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
@@ -87,7 +86,6 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
     }
   }, [isAuthenticated]);
 
-  // Handle all explicit global cross-component communications (Navbar, Footer, Tabs layout overrides)
   useEffect(() => {
     const handleGlobalSearch = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -107,7 +105,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail === 'products') {
         setActiveTab('products');
-        setIsFormOpen(false); // Make sure form overlay collapses to see list immediately
+        setIsFormOpen(false);
       } else if (customEvent.detail === 'orders') {
         setActiveTab('orders');
         setIsFormOpen(false);
@@ -125,7 +123,6 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
     };
   }, []);
 
-  // Backwards compatibility sync for standard React structural component trees 
   useEffect(() => {
     if (externalCategoryFilter) {
       setSelectedCategory(externalCategoryFilter.toLowerCase());
@@ -372,12 +369,10 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
   const processedProducts = useMemo(() => {
     let result = [...products];
 
-    // 1. Live Categorization filtration array checks
     if (selectedCategory !== 'all') {
       result = result.filter(item => item.category_en.toLowerCase() === selectedCategory.toLowerCase());
     }
 
-    // 2. Navbar Query Text Input matching filter checks
     if (adminSearchQuery.trim() !== '') {
       const searchLower = adminSearchQuery.toLowerCase().trim();
       result = result.filter(item => 
@@ -390,7 +385,6 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
       );
     }
 
-    // 3. Sorting Engine Configurations
     result.sort((a, b) => {
       const priceA = a.discount_price ?? a.price;
       const priceB = b.discount_price ?? b.price;
@@ -472,7 +466,6 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
               <button onClick={openAddMode} className="add-btn"><Plus size={18} /> {t('Add New Product', 'إضافة منتج جديد')}</button>
             </div>
 
-            {/* Combined Admin Side-by-Side Filter Bar */}
             <div className="admin-filter-bar">
               <div className="filter-select-wrapper">
                 <Layers size={15} className="select-icon" />
@@ -535,8 +528,8 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
               <div className="category-label-row">
                 <label>{isCustomCategory ? t('Custom Category Setup *', 'إعداد قسم مخصص *') : t('Assigned Product Category *', 'قسم المنتج الحالي *')}</label>
                 <button type="button" className="category-toggle-btn" onClick={() => setIsCustomCategory(!isCustomCategory)}>
-                  {isCustomCategory ? <List size={14} className="btn-icon" /> : <FolderPlus size={14} className="btn-icon" />}
-                  <span>{isCustomCategory ? t('Pick Existing', 'اختر من الأقسام الحالية') : t('Define Brand New Category', 'إنشاء قسم جديد تماماً')}</span>
+                  {isCustomCategory ? <List size={14} /> : <FolderPlus size={14} />}
+                  {isCustomCategory ? t('Pick Existing', 'اختر من الأقسام الحالية') : t('Define Brand New Category', 'إنشاء قسم جديد تماماً')}
                 </button>
               </div>
 
@@ -662,7 +655,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
                     <button type="button" className="color-drag-handle" disabled={isUploading} style={{ cursor: 'grab', background: 'none', border: 'none', display: 'flex', alignItems: 'center', padding: '0 4px', color: '#64748b' }}>
                       <GripHorizontal size={16} />
                     </button>
-                    <div className="color-text-inputs-wrapper">
+                    <div className="color-text-inputs-inputs-wrapper">
                       <input type="text" placeholder={t('English Label', 'اسم اللون بالإنجليزي')} disabled={isUploading} value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
                       <input type="text" placeholder={t('Arabic Label', 'اسم اللون بالعربي')} disabled={isUploading} value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} dir="rtl" />
                     </div>
