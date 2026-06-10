@@ -356,15 +356,20 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
     }
   };
 
-  const dbCategories = useMemo(() => {
-    const categoriesMap = new Map<string, string>();
-    products.forEach(p => {
-      if (p.category_en && p.category_ar) {
-        categoriesMap.set(p.category_en.trim(), language === 'ar' ? p.category_ar.trim() : p.category_en.trim());
-      }
-    });
-    return Array.from(categoriesMap.entries()).map(([enVal, localizedLabel]) => ({ value: enVal, label: localizedLabel }));
-  }, [products, language]);
+ const dbCategories = useMemo(() => {
+  const categoriesMap = new Map<string, { en: string; ar: string }>();
+  products.forEach(p => {
+    if (p.category_en && p.category_ar) {
+      categoriesMap.set(p.category_en.trim(), { en: p.category_en.trim(), ar: p.category_ar.trim() });
+    }
+  });
+return Array.from(categoriesMap.entries()).map(([enVal, names]) => ({
+  value: enVal,
+  en: names.en,
+  ar: names.ar,
+  label: `${names.en} / ${names.ar}`,
+}));
+}, [products]);
 
   const processedProducts = useMemo(() => {
     let result = [...products];
@@ -545,9 +550,9 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
                     });
                   }}>
                   <option value="" disabled>{t('Select from live store channels...', 'اختر القسم من تصنيفات المتجر...')}</option>
-                  {dbCategories.map((cat, idx) => (
+                 {dbCategories.map((cat, idx) => (
                     <option key={idx} value={cat.value}>
-                      {cat.label} / {cat.value}
+                      {cat.value} / {cat.label.split(' / ')[1]}
                     </option>
                   ))}
                 </select>
