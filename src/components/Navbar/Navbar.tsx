@@ -1,22 +1,38 @@
-import { useState, Dispatch, SetStateAction, useEffect } from 'react';
+import { useState, Dispatch, SetStateAction, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, User, Menu, Search, X, Globe } from 'lucide-react';
+import { ShoppingCart, User, Menu, Search, X, Globe, LogOut, Heart, Package, ShieldAlert } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext'; 
-import CartDrawer from '../CartDrawer/CartDrawer'; 
+import CartDrawer from '../CartDrawer/CartDrawer';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom'; 
+import toast from 'react-hot-toast';
 import './Navbar.css';
 
 interface NavbarProps {
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
+  onOpenAuth: () => void;
 }
 
-const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
+const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false); 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  
   const { t, toggleLanguage, language } = useLanguage();
   const { cartCount } = useCart(); 
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isRtl = language === 'ar';
+
+  // SECURITY RULE: The Admin Panel option will NEVER render unless the logged-in email is listed here
+  const ADMIN_EMAILS = ['admin@homiyaa.com', 'owner@homiyaa.com']; 
+  const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
 
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
@@ -25,26 +41,54 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
     }
   };
 
-  // Broadcast search query variations globally so Admin views can tap into it
   useEffect(() => {
     const event = new CustomEvent('adminSearchChanged', { detail: searchQuery });
     window.dispatchEvent(event);
   }, [searchQuery]);
 
-  const handleMobileScroll = (targetId: string) => {
-    setIsMobileMenuOpen(false);
-    setTimeout(() => {
-      const element = document.getElementById(targetId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        // Fallback or redirection logic if navigation elements don't exist in current admin view
-        const isAdmin = window.location.pathname.includes('/admin');
-        if (isAdmin) {
-          window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'products' }));
-        }
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
       }
-    }, 150);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Closes open menu overlays when switching page views
+  useEffect(() => {
+    setIsDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
+      toast.success(isRtl ? 'تم تسجيل الخروج بنجاح' : 'Signed out successfully');
+      navigate('/');
+    } catch (error) {
+      toast.error(isRtl ? 'حدث خطأ أثناء تسجيل الخروج' : 'Error signing out');
+    }
+  };
+
+  // SMART ROUTING: Navigates back home if on /account or /product pages, then smoothly scrolls down
+  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, targetId: string) => {
+    e.preventDefault();
+    setIsMobileMenuOpen(false);
+    
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    } else {
+      const element = document.getElementById(targetId);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -58,93 +102,121 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
         <div className="container">
           <div className="navbar-content">
             
+            {/* Logo Workspace Box Container */}
             <motion.div
               whileTap={{ scale: 0.98 }}
               className="navbar-logo-container"
               onClick={() => {
-                if (window.location.pathname.includes('/admin')) {
-                  window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'dashboard' }));
-                } else {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+                navigate('/');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsMobileMenuOpen(false);
               }}
             >
-              <img 
-                src="/logo.jpeg" 
-                alt="HOMIYAA Logo" 
-                className="navbar-logo-img" 
-              />
+              <img src="/logo.jpeg" alt="HOMIYAA Logo" className="navbar-logo-img" />
               <div className="navbar-text-group">
                 <div className="navbar-logo">HOMIYAA</div>
                 <span className="slogan">{t('Your Home, Your Style', 'بيتك، على ذوقك')}</span>
               </div>
             </motion.div>
 
+            {/* Desktop-Only Anchored Layout Section Links */}
             <div className="navbar-links">
-              <a 
-                href="#shop" 
-                className="navbar-link"
-                onClick={(e) => {
-                  if (window.location.pathname.includes('/admin')) {
-                    e.preventDefault();
-                    window.dispatchEvent(new CustomEvent('adminNavigateTo', { detail: 'products' }));
-                  }
-                }}
-              >
+              <a href="#shop" className="navbar-link" onClick={(e) => handleNavigation(e, 'shop')}>
                 {t('Shop', 'المتجر')}
               </a>
-              <a href="#contact" className="navbar-link">{t('Contact', 'تواصل معنا')}</a>
+              <a href="#contact" className="navbar-link" onClick={(e) => handleNavigation(e, 'contact')}>
+                {t('Contact', 'تواصل معنا')}
+              </a>
             </div>
 
+            {/* Universal System Operations Panel View Actions */}
             <div className="navbar-actions">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={toggleLanguage}
                 className="navbar-icon-btn lang-toggle-btn"
                 type="button"
-                aria-label="Toggle Language"
               >
                 <Globe className="icon icon-globe-svg" />
-                <span className="lang-toggle-text">
-                  {language === 'en' ? 'AR' : 'EN'}
-                </span>
+                <span className="lang-toggle-text">{language === 'en' ? 'AR' : 'EN'}</span>
               </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={toggleSearch}
-                className={`navbar-icon-btn ${isSearchOpen ? 'active' : ''}`}
-                aria-label="Toggle Search"
+                className={`navbar-icon-btn desk-search-btn ${isSearchOpen ? 'active' : ''}`}
               >
                 {isSearchOpen ? <X className="icon" /> : <Search className="icon" />}
               </motion.button>
               
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                className="navbar-icon-btn user-profile-btn"
-              >
-                <User className="icon" />
-              </motion.button>
+              {/* Account Authorization Menu Node Setup - FIXED: Always visible & styled like image_f237e0.png */}
+              <div className="user-profile-relative-wrapper" ref={dropdownRef}>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => user ? setIsDropdownOpen(!isDropdownOpen) : onOpenAuth()}
+                  className={`navbar-icon-btn user-profile-btn ${user ? 'user-authenticated' : ''}`}
+                  type="button"
+                >
+                  <User className="icon" />
+                </motion.button>
+
+                <AnimatePresence>
+                  {user && isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className={`navbar-user-dropdown ${isRtl ? 'dropdown-rtl' : 'dropdown-ltr'}`}
+                    >
+                      <div className="dropdown-user-info">
+                        <span className="user-welcome-text">{t('Welcome back,', 'مرحباً بك،')}</span>
+                        <p className="user-display-email">{user?.user_metadata?.full_name || user?.email}</p>
+                      </div>
+                      <hr className="dropdown-divider" />
+                      
+                      <button onClick={() => navigate('/account')} className="dropdown-item">
+                        <Package size={16} />
+                        <span>{t('My Orders', 'طلباتي')}</span>
+                      </button>
+
+                      <button onClick={() => navigate('/account')} className="dropdown-item">
+                        <Heart size={16} />
+                        <span>{t('Wishlist', 'قائمة المفضلة')}</span>
+                      </button>
+
+                      {/* STRICT GUARD: Admin option is never generated unless email is validated against safe list */}
+                      {isAdmin && (
+                        <button onClick={() => navigate('/admin')} className="dropdown-item admin-link-item">
+                          <ShieldAlert size={16} />
+                          <span>{t('Admin Panel', 'لوحة التحكم')}</span>
+                        </button>
+                      )}
+
+                      <hr className="dropdown-divider" />
+                      <button onClick={handleSignOut} className="dropdown-item logout-item">
+                        <LogOut size={16} />
+                        <span>{t('Sign Out', 'تسجيل الخروج')}</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
+              {/* Basket Tracking Operation Icon Button */}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setIsCartOpen(true)}
                 className="navbar-icon-btn navbar-cart"
-                style={{ position: 'relative' }}
               >
                 <ShoppingCart className="icon" />
-                {cartCount > 0 && (
-                  <span className="navbar-cart-badge">
-                    {cartCount}
-                  </span>
-                )}
+                {cartCount > 0 && <span className="navbar-cart-badge">{cartCount}</span>}
               </motion.button>
               
+              {/* Triple Bar Hamburger Trigger Display Element Button for Small Screen Mobile Viewports */}
               <motion.button 
                 whileTap={{ scale: 0.85 }}
                 className="navbar-mobile-menu"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="Toggle Menu"
               >
                 {isMobileMenuOpen ? <X className="icon" /> : <Menu className="icon" />}
               </motion.button>
@@ -152,13 +224,13 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
           </div>
         </div>
 
+        {/* Desktop Header Global Slide-Down Expanded Search Area Drawer Section Panel */}
         <AnimatePresence>
           {isSearchOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
               className="navbar-search-drawer"
             >
               <div className="container search-drawer-inner">
@@ -166,18 +238,15 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
                   <Search className="search-input-icon" />
                   <input
                     type="text"
-                    placeholder={t('Search kitchen tools, home tools...', 'ابحث عن أدوات المطبخ، أواني الطعام...')}
+                    className="navbar-search-input"
+                    placeholder={t('Search products...', 'ابحث عن المنتجات...')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="navbar-search-input"
                     autoFocus
                   />
                   {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery('')} 
-                      className="search-clear-btn"
-                    >
-                      <X className="icon-sm" />
+                    <button className="search-clear-btn" onClick={() => setSearchQuery('')}>
+                      <X size={16} />
                     </button>
                   )}
                 </div>
@@ -186,27 +255,35 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
           )}
         </AnimatePresence>
 
+        {/* Responsive Mobile Drawer Container Layout Dropdown Panel Overlay */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
-              className="navbar-mobile-dropdown-panel"
+              className="navbar-mobile-drawer-container"
             >
-              <div className="mobile-dropdown-links-wrapper">
-                <button 
-                  className="mobile-navbar-link-btn" 
-                  onClick={() => handleMobileScroll('shop')}
-                >
-                  {t('Shop', 'المتجر')}
+              <div className="mobile-drawer-wrapper">
+                
+                {/* Embedded Mobile Input Field Search Row */}
+                <div className="mobile-search-box-row">
+                  <Search className="mobile-search-box-icon" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder={t('Search...', 'ابحث عن منتجاتك...')} 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {/* Core Navigation Section Links Buttons */}
+                <button onClick={(e) => handleNavigation(e, 'shop')} className="mobile-drawer-nav-item">
+                  {t('Shop Products Grid', 'تصفح المتجر الرئيسي')}
                 </button>
-                <button 
-                  className="mobile-navbar-link-btn" 
-                  onClick={() => handleMobileScroll('contact')}
-                >
-                  {t('Contact', 'تواصل معنا')}
+                <button onClick={(e) => handleNavigation(e, 'contact')} className="mobile-drawer-nav-item">
+                  {t('Contact Support', 'اتصل بنا')}
                 </button>
               </div>
             </motion.div>

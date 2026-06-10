@@ -130,8 +130,8 @@ html[dir="rtl"] .slogan {
   top: -5px;
   right: -5px;
   background-color: #ef4444;
-  color: white;
-  border-radius: 50%;
+  color: var(--white);
+  border-radius: var(--radius-full);
   padding: 2px 6px;
   font-size: 0.7rem;
   font-weight: bold;
@@ -140,59 +140,6 @@ html[dir="rtl"] .slogan {
 html[dir="rtl"] .navbar-cart-badge {
   right: auto;
   left: -5px;
-}
-
-.navbar-mobile-dropdown-panel {
-  display: block;
-  background-color: var(--white);
-  border-top: 1px solid var(--primary-50);
-  border-bottom: 2px solid var(--primary-100);
-  width: 100%;
-  overflow: hidden;
-}
-
-.mobile-dropdown-links-wrapper {
-  display: flex;
-  flex-direction: column;
-  padding: 0.5rem 1rem;
-}
-
-.mobile-navbar-link-btn {
-  display: block;
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  color: var(--primary-800);
-  font-weight: 600;
-  font-size: 1.05rem;
-  padding: 0.95rem 0.5rem;
-  border-bottom: 1px solid var(--primary-50);
-  text-align: left;
-}
-
-html[dir="rtl"] .mobile-navbar-link-btn {
-  text-align: right;
-}
-
-.mobile-navbar-link-btn:last-child {
-  border-bottom: none;
-}
-
-.navbar-mobile-menu {
-  display: block;
-  padding: 0.5rem;
-  -webkit-tap-highlight-color: transparent;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.navbar-mobile-menu .icon {
-  width: 1.55rem;
-  height: 1.55rem;
-  color: var(--primary-800);
 }
 
 .navbar-search-drawer {
@@ -256,6 +203,193 @@ html[dir="rtl"] .search-clear-btn {
   left: 0.85rem;
 }
 
+/* User Profile Wrapper */
+.user-profile-relative-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* User Dropdown Main Modal Card - EXACT MATCH to image_f237e0.png across ALL views */
+.navbar-user-dropdown {
+  position: absolute;
+  top: 130%;
+  width: 240px;
+  background-color: var(--white);
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 0;
+  z-index: 1000;
+}
+
+.dropdown-ltr {
+  right: 0;
+}
+.dropdown-rtl {
+  left: 0;
+}
+
+.dropdown-user-info {
+  padding: 0.5rem 1.25rem 0.75rem;
+}
+
+.user-welcome-text {
+  font-size: 0.75rem;
+  color: var(--primary-400);
+  display: block;
+  font-weight: 500;
+}
+
+.user-display-email {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary-800);
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-divider {
+  border: 0;
+  border-top: 1px solid var(--primary-50);
+  margin: 0.5rem 0;
+}
+
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary-700);
+  text-align: inherit;
+  cursor: pointer;
+  transition: all var(--transition-base, 0.15s ease-in-out);
+}
+
+.dropdown-item:hover {
+  background-color: var(--primary-50);
+  color: var(--primary-900);
+}
+
+.dropdown-item .icon,
+.dropdown-item svg {
+  color: var(--primary-500);
+  transition: color var(--transition-base, 0.15s);
+}
+
+.dropdown-item:hover svg {
+  color: var(--primary-900);
+}
+
+.admin-link-item {
+  color: #4f46e5;
+}
+.admin-link-item:hover {
+  background-color: #f5f3ff;
+  color: #4338ca;
+}
+.admin-link-item:hover svg {
+  color: #4338ca;
+}
+
+.logout-item {
+  color: #dc2626;
+}
+.logout-item:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+.logout-item:hover svg {
+  color: #b91c1c;
+}
+
+.navbar-icon-btn.user-authenticated {
+  color: var(--primary-800);
+  background-color: var(--primary-50);
+  border-radius: var(--radius-full);
+}
+
+/* Responsive Mobile Drawer Container Layout */
+.navbar-mobile-drawer-container {
+  width: 100%;
+  background-color: var(--white);
+  border-top: 1px solid var(--primary-50);
+  border-bottom: 2px solid var(--primary-100);
+  overflow: hidden;
+  display: none;
+}
+
+.mobile-drawer-wrapper {
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobile-search-box-row {
+  display: flex;
+  align-items: center;
+  background-color: var(--primary-50);
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: 0.75rem;
+  gap: 8px;
+}
+
+.mobile-search-box-icon {
+  color: var(--primary-400);
+}
+
+.mobile-search-box-row input {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.88rem;
+  color: var(--primary-800);
+  font-family: inherit;
+}
+
+.mobile-drawer-nav-item {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-700);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color var(--transition-base, 0.2s);
+}
+
+html[dir="rtl"] .mobile-drawer-nav-item {
+  text-align: right;
+}
+
+.mobile-drawer-nav-item:hover,
+.mobile-drawer-nav-item:active {
+  background-color: var(--primary-50);
+  color: var(--primary-900);
+}
+
+.mobile-drawer-divider {
+  border: 0;
+  border-top: 1px solid var(--primary-100);
+  margin: 0.5rem 0;
+}
+
 @media (max-width: 767px) {
   .navbar-content {
     padding: 0.6rem 0.5rem;
@@ -309,6 +443,7 @@ html[dir="rtl"] .search-clear-btn {
 
   .navbar-mobile-menu {
     padding: 0.35rem;
+    display: block;
   }
 
   .navbar-mobile-menu .icon {
@@ -316,8 +451,29 @@ html[dir="rtl"] .search-clear-btn {
     height: 1.45rem;
   }
 
-  .user-profile-btn {
+  /* FIXED: Kept profile-wrapper visible on mobile viewports so card renders like desktop */
+  .user-profile-relative-wrapper {
+    display: inline-block !important;
+  }
+  
+  /* Positions the mobile dropdown cleanly relative to its floating header space */
+  .navbar-user-dropdown {
+    right: -45px;
+    width: 210px;
+  }
+  
+  html[dir="rtl"] .navbar-user-dropdown {
+    right: auto;
+    left: -45px;
+  }
+
+  .desk-search-btn,
+  .navbar-links {
     display: none !important;
+  }
+
+  .navbar-mobile-drawer-container {
+    display: block;
   }
 }
 
@@ -344,7 +500,7 @@ html[dir="rtl"] .search-clear-btn {
   }
 
   .navbar-mobile-menu,
-  .navbar-mobile-dropdown-panel {
+  .navbar-mobile-drawer-container {
     display: none !important;
   }
 
@@ -363,7 +519,7 @@ html[dir="rtl"] .search-clear-btn {
     text-decoration: none;
     padding: 0.5rem 1rem;
     border-radius: var(--radius-md);
-    transition: all var(--transition-base);
+    transition: all var(--transition-base, 0.2s);
   }
 
   .navbar-link:hover {

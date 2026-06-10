@@ -5,18 +5,27 @@ import Navbar from './components/Navbar/Navbar';
 import Hero from './components/Hero/Hero';
 import ProductGrid from './components/ProductGrid/ProductGrid';
 import ProductPage from './pages/ProductPage/ProductPage';
+import AuthModal from './components/AuthModal/AuthModal';
 import Footer from './components/Footer/Footer';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AccountPage from './pages/AccountPage/AccountPage';
 import './App.css';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   return (
     <BrowserRouter>
       <div className="app">
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        
         <Toaster
           position="top-center"
+          // FIX: This containerStyle ensures the toast wrapper always floats above the modal and its backdrop blur
+          containerStyle={{
+            zIndex: 999999, 
+          }}
           toastOptions={{
             duration: 3000,
             style: {
@@ -47,7 +56,11 @@ function App() {
           }}
         />
 
-        <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <Navbar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onOpenAuth={() => setIsAuthOpen(true)}
+        />
 
         <Routes>
           <Route
@@ -61,6 +74,7 @@ function App() {
           />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/account" element={<AccountPage />} />
         </Routes>
 
         <Footer />

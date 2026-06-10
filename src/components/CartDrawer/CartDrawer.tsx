@@ -4,8 +4,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../supabaseClient';
 import emailjs from '@emailjs/browser';
 import { X, Trash2, ShoppingBag, Loader2, ShoppingCart } from 'lucide-react';
-import './CartDrawer.css';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import './CartDrawer.css';
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -46,6 +47,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const { cart, updateQuantity, removeFromCart, clearCart } = useCart();
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

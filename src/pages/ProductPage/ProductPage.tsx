@@ -5,8 +5,9 @@ import { ShoppingCart, Heart, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight }
 import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
-import './ProductPage.css';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import './ProductPage.css';
 
 interface ProductColor {
   color_code: string;
@@ -52,6 +53,9 @@ const ProductPage = () => {
   const PrevIcon = isRTL ? ChevronRight : ChevronLeft;
   const NextIcon = isRTL ? ChevronLeft : ChevronRight;
 
+  const { user } = useAuth();
+  const [wishlisted, setWishlisted] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchProduct = async () => {
@@ -77,6 +81,7 @@ const ProductPage = () => {
     );
   }
 
+  
   if (!product) {
     return (
       <div className="pp-not-found">
@@ -88,6 +93,14 @@ const ProductPage = () => {
       </div>
     );
   }
+  useEffect(() => {
+  if (!user || !product) return;
+  supabase.from('wishlists')
+    .select('id')
+    .match({ user_id: user.id, product_id: product.id })
+    .single()
+    .then(({ data }) => { if (data) setWishlisted(true); });
+}, [user, product]);
 
   const images = product.product_images || [];
   const colors = product.product_colors || [];
@@ -176,9 +189,23 @@ const ProductPage = () => {
                 )}
               </div>
 
-              <button className="pp-wishlist-btn" aria-label="Wishlist">
-                <Heart size={18} />
-              </button>
+              <button
+                className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
+                aria-label="Wishlist"
+                onClick={async () => {
+                    if (!user) { toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first'); return; }
+                    if (wishlisted) {
+                    await supabase.from('wishlists').delete().match({ user_id: user.id, product_id: product.id });
+                    setWishlisted(false);
+                    toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
+                    } else {
+                    await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+                    setWishlisted(true);
+                    toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+                    }
+                }}
+                >  <Heart size={18} fill={wishlisted ? '#ef4444' : 'none'} color={wishlisted ? '#ef4444' : 'currentColor'} />
+            </button>
 
               {images.length > 1 && (
                 <>
