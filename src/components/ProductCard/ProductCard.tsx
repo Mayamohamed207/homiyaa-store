@@ -91,7 +91,16 @@ const ProductCard = ({
   };
 
   const name = language === 'ar' ? product.name_ar : product.name_en;
-  const category = language === 'ar' ? product.category_ar : product.category_en;
+  
+  // Get initial value based on active language selection
+  let category = language === 'ar' ? product.category_ar : product.category_en;
+
+  // Clean raw database entries that mistakenly contain combined dual-language names (e.g., "MUGS / مجات حرارية")
+  if (category && category.includes(' / ')) {
+    const parts = category.split(' / ');
+    category = language === 'ar' ? parts[1] : parts[0];
+  }
+
   const images = product.product_images || [];
   const currentImageUrl = images.length > 0 && images[activeImgIndex] ? images[activeImgIndex].image_url : FALLBACK_IMAGE;
   const colors = product.product_colors || [];
@@ -110,15 +119,17 @@ const ProductCard = ({
           ? '⚠️ يرجى اختيار لون أولاً!'
           : '⚠️ Please select a color!'
       );
-      toast.success(
-      language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart'
-    );
       return;
     }
     const assignedColor = colors.length > 0
       ? colors[chosenColorIndex!]
       : { color_code: '#000000', color_name_en: 'Default', color_name_ar: 'افتراضي' };
+    
     onAddToCart(product, assignedColor);
+    
+    toast.success(
+      language === 'ar' ? 'تمت الإضافة إلى السلة بنجاح' : 'Added to cart successfully'
+    );
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -132,10 +143,8 @@ const ProductCard = ({
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     if (Math.abs(dx) > 40 && dy < 60) {
       if (dx < 0) {
-        // swipe left → next
         setActiveImgIndex(i => (i + 1) % images.length);
       } else {
-        // swipe right → prev
         setActiveImgIndex(i => (i - 1 + images.length) % images.length);
       }
     }
@@ -226,8 +235,8 @@ const ProductCard = ({
           </div>
         )}
 
-        <p className="product-category line-clamp-1">{category}</p>
-        <h3 className="product-name line-clamp-2">{name}</h3>
+        <h1 className="product-name line-clamp-2">{name}</h1>
+        <h6 className="product-category line-clamp-1">{category}</h6>
 
         <div className="product-footer">
           <div>

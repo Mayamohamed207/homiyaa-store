@@ -14,33 +14,34 @@
 .orders-panel-title h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--primary-800);
 }
 
 .orders-panel-title p {
   margin: 4px 0 0 0;
-  color: #64748b;
+  color: var(--primary-700);
   font-size: 0.9rem;
 }
 
 .refresh-logs-btn {
-  background: #f1f5f9;
+  background: var(--primary-100);
   border: none;
   padding: 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  color: #475569;
+  color: var(--primary-800);
   display: flex;
   align-items: center;
 }
 
 /* Data Log Structural Layout Matrix */
 .orders-table-wrapper {
-  background: #ffffff;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--primary-200);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .orders-data-table {
@@ -48,32 +49,42 @@
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;
+  min-width: 800px; /* Essential to force mobile scrolling instead of squishing text */
+}
+
+html[dir="rtl"] .orders-data-table {
+  text-align: right;
 }
 
 .orders-data-table th {
   padding: 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  color: #64748b;
+  background: var(--cream);
+  border-bottom: 1px solid var(--primary-200);
+  color: var(--primary-800);
   font-weight: 600;
 }
 
 .orders-data-table td {
   padding: 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--primary-100);
   vertical-align: top;
 }
 
 .order-id-cell {
   font-weight: bold;
-  color: #0f172a;
+  color: var(--primary-900);
 }
 
 /* Itemized Order Breakdowns */
 .order-items-list {
   margin: 0;
   padding-left: 1.25rem;
-  color: #334155;
+  color: var(--primary-800);
+}
+
+html[dir="rtl"] .order-items-list {
+  padding-left: 0;
+  padding-right: 1.25rem;
 }
 
 .order-items-list li {
@@ -83,7 +94,7 @@
 /* Operational Interfacing Handlers */
 .status-update-badge {
   padding: 6px 14px;
-  border-radius: 1rem;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 700;
   border: none;
@@ -95,7 +106,7 @@
   background: #fff0f0;
   border: 1px solid #fca5a5;
   color: #dc2626;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   cursor: pointer;
   display: flex;
@@ -110,6 +121,6 @@
 .orders-empty-state {
   padding: 3rem;
   text-align: center;
-  color: #94a3b8;
+  color: var(--primary-400);
   font-size: 1rem;
 }

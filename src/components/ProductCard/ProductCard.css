@@ -1,193 +1,27 @@
-/* Color Ring Highlight */
-.active-color-ring {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4f46e5 !important;
+.product-name {
+  font-size: 1.1rem;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  font-weight: 700;
+  display: block;
 }
 
-/* Modal Structural Layout Backdrops */
-.product-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 999999;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end; /* Mobile Bottom Drawer effect */
-}
-
-.product-modal-content-wrapper {
-  background: #ffffff;
-  width: 100%;
-  max-width: 550px;
-  height: 85vh;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 -20px 25px -5px rgba(0, 0, 0, 0.15);
-}
-
-.close-modal-sheet-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f1f5f9;
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.modal-scrollable-body {
-  height: 100%;
-  overflow-y: auto;
-  padding-bottom: 100px; /* Space for sticky drawer button */
-}
-
-.modal-hero-image-frame {
-  width: 100%;
-  height: 320px;
-  background: #f8fafc;
-}
-
-.modal-hero-image-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.modal-details-container {
-  padding: 20px;
-}
-
-.modal-cat-tag {
+.product-category {
   font-size: 0.8rem;
   text-transform: uppercase;
   color: #6366f1;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 12px;
 }
 
-.modal-product-title-en {
-  font-size: 1.4rem;
-  color: #0f172a;
-  margin: 6px 0 12px 0;
-  font-weight: 800;
-}
-
-.modal-pricing-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.modal-main-price {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #059669;
-}
-
-.modal-old-price-strike {
-  font-size: 1.1rem;
-  text-decoration: line-through;
-  color: #94a3b8;
-}
-
-.modal-divider {
-  border: 0;
-  height: 1px;
-  background: #e2e8f0;
-  margin: 16px 0;
-}
-
-.modal-description-box h4, .modal-color-picker-section h4 {
-  font-size: 0.95rem;
-  color: #334155;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.modal-description-box p {
-  color: #475569;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.modal-color-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.modal-color-node {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.modal-color-node.selected-node {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4f46e5;
-  border-color: transparent;
-}
-
-.modal-action-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 16px 20px;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
-}
-
-.modal-add-to-cart-big-btn {
-  width: 100%;
-  background: #0f172a;
-  color: #ffffff;
-  border: none;
-  padding: 14px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-/* Tablet & Desktop Adjustments */
-@media (min-width: 640px) {
-  .product-modal-backdrop {
-    align-items: center;
-  }
-  .product-modal-content-wrapper {
-    height: 75vh;
-    border-radius: 20px;
-  }
-}
-/* ── Selected color circle states ── */
 .product-color.selected {
   border-color: var(--primary-600) !important;
   transform: scale(1.18);
   box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--primary-500);
 }
 
-/* ── Administrative modifications row ── */
 .admin-actions-wrapper {
   display: flex;
   align-items: center;
@@ -228,7 +62,7 @@
   border-color: var(--primary-300) !important;
   box-shadow: var(--shadow-sm);
 }
-/* ── Swipe-enabled image container ── */
+
 .product-image-container {
   touch-action: pan-y;
   user-select: none;
@@ -246,7 +80,6 @@
   -webkit-user-drag: none;
 }
 
-/* ── Image dots ── */
 .card-image-dots {
   position: absolute;
   bottom: 8px;
@@ -278,6 +111,7 @@
   width: 14px;
   border-radius: 4px;
 }
+
 .product-favorite.wishlisted {
   background: #fff0f0;
   border-color: #fca5a5;

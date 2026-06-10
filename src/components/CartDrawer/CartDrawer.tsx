@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../supabaseClient';
@@ -13,35 +13,12 @@ const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
-const GOVERNORATE_SHIPPING_MATRIX: Record<string, { en: string; ar: string; cost: number }> = {
-  cairo: { en: 'Cairo', ar: 'القاهرة', cost: 50 },
-  giza: { en: 'Giza', ar: 'الجيزة', cost: 50 },
-  alexandria: { en: 'Alexandria', ar: 'الإسكندرية', cost: 65 },
-  fayoum: { en: 'Fayoum', ar: 'الفيوم', cost: 80 },
-  qalyubia: { en: 'Qalyubia', ar: 'القليوبية', cost: 55 },
-  sharqia: { en: 'Sharqia', ar: 'الشرقية', cost: 70 },
-  dakahlia: { en: 'Dakahlia', ar: 'الدقهلية', cost: 70 },
-  beheira: { en: 'Beheira', ar: 'البحيرة', cost: 75 },
-  gharbia: { en: 'Gharbia', ar: 'الغربية', cost: 70 },
-  monufia: { en: 'Monufia', ar: 'المنوفية', cost: 70 },
-  ismailia: { en: 'Ismailia', ar: 'الإسماعيلية', cost: 75 },
-  suez: { en: 'Suez', ar: 'السويس', cost: 75 },
-  port_said: { en: 'Port Said', ar: 'بورسعيد', cost: 75 },
-  luxor: { en: 'Luxor', ar: 'الأقصر', cost: 100 },
-  aswan: { en: 'Aswan', ar: 'أسوان', cost: 110 },
-  minya: { en: 'Minya', ar: 'المنيا', cost: 90 },
-  sohag: { en: 'Sohag', ar: 'سوهاج', cost: 95 },
-  qena: { en: 'Qena', ar: 'قنا', cost: 100 },
-  asyut: { en: 'Asyut', ar: 'أسيوط', cost: 90 },
-  beni_suef: { en: 'Beni Suef', ar: 'بني سويف', cost: 80 },
-  kafr_el_sheikh: { en: 'Kafr El Sheikh', ar: 'كفر الشيخ', cost: 75 },
-  damietta: { en: 'Damietta', ar: 'دمياط', cost: 75 },
-  north_sinai: { en: 'North Sinai', ar: 'شمال سيناء', cost: 90 },
-  south_sinai: { en: 'South Sinai', ar: 'جنوب سيناء', cost: 95 },
-  red_sea: { en: 'Red Sea', ar: 'البحر الأحمر', cost: 100 },
-  matrouh: { en: 'Matrouh', ar: 'مطروح', cost: 100 },
-  new_valley: { en: 'New Valley', ar: 'الوادي الجديد', cost: 110 },
-};
+interface DbShippingRecord {
+  key_code: string;
+  name_en: string;
+  name_ar: string;
+  cost: number;
+}
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { cart, updateQuantity, removeFromCart, clearCart } = useCart();
@@ -52,11 +29,33 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [gov, setGov] = useState('cairo');
   const [address, setAddress] = useState('');
+  
+  // Dynamic database shipping states
+  const [shippingOptions, setShippingOptions] = useState<DbShippingRecord[]>([]);
+  const [selectedGovKey, setSelectedGovKey] = useState('');
+
+  // Fetch real-time configurations on open
+  useEffect(() => {
+    if (isOpen) {
+      supabase
+        .from('shipping_matrix')
+        .select('key_code, name_en, name_ar, cost')
+        .order('name_en', { ascending: true })
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setShippingOptions(data);
+            const hasCairo = data.find(item => item.key_code === 'cairo');
+            setSelectedGovKey(hasCairo ? 'cairo' : data[0].key_code);
+          }
+        });
+    }
+  }, [isOpen]);
+
+  const activeGovRecord = shippingOptions.find(o => o.key_code === selectedGovKey);
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shippingCost = cart.length > 0 ? GOVERNORATE_SHIPPING_MATRIX[gov].cost : 0;
+  const shippingCost = cart.length > 0 && activeGovRecord ? Number(activeGovRecord.cost) : 0;
   const grandTotal = subtotal + shippingCost;
 
   const buildOrderDetailsHtml = () => {
@@ -98,34 +97,20 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       total_price: `${grandTotal}`,
     };
 
-    // Send to customer
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      { ...sharedParams, to_email: email },
-      EMAILJS_PUBLIC_KEY
-    );
-
-    // Send to admin with full customer details in customer_name field
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      {
-        ...sharedParams,
-        to_email: ADMIN_EMAIL,
-        customer_name: `${name} | 📞 ${phone} | 📍 ${govName} — ${address}`,
-      },
-      EMAILJS_PUBLIC_KEY
-    );
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { ...sharedParams, to_email: email }, EMAILJS_PUBLIC_KEY);
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      ...sharedParams,
+      to_email: ADMIN_EMAIL,
+      customer_name: `${name} | 📞 ${phone} | 📍 ${govName} — ${address}`,
+    }, EMAILJS_PUBLIC_KEY);
   };
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cart.length === 0 || loading) return;
+    if (cart.length === 0 || loading || !activeGovRecord) return;
     setLoading(true);
 
-    const selectedGov = GOVERNORATE_SHIPPING_MATRIX[gov];
-    const govName = language === 'ar' ? selectedGov.ar : selectedGov.en;
+    const govName = language === 'ar' ? activeGovRecord.name_ar : activeGovRecord.name_en;
 
     const orderPayload = {
       customer_name: name,
@@ -139,7 +124,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
         name_ar: i.name_ar,
         quantity: i.quantity,
         price: i.price,
-         image: i.image ?? null,
+        image: i.image ?? null,
       })),
       subtotal,
       shipping_cost: shippingCost,
@@ -153,28 +138,18 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       if (error) throw error;
 
       const orderId = String(data?.[0]?.id || 'N/A');
-
       await sendEmails(orderId, govName);
 
       clearCart();
       setName('');
       setEmail('');
       setPhone('');
-      setGov('cairo');
       setAddress('');
       onClose();
 
-      toast.success(
-        language === 'ar'
-            ? 'تم تسجيل طلبك بنجاح! تحقق من بريدك الإلكتروني'
-            : 'Order placed! Check your email for details'
-        );
+      toast.success(language === 'ar' ? 'تم تسجيل طلبك بنجاح! تحقق من بريدك الإلكتروني' : 'Order placed! Check your email for details');
     } catch (err: any) {
-      toast.error(
-        language === 'ar'
-            ? `حدث خطأ: ${err.message}`
-            : `Checkout failed: ${err.message}`
-        );
+      toast.error(language === 'ar' ? `حدث خطأ: ${err.message}` : `Checkout failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -185,7 +160,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   return (
     <div className="cart-drawer-backdrop" onClick={onClose}>
       <div className="cart-drawer-panel" onClick={e => e.stopPropagation()} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-
         <div className="cart-drawer-header">
           <h3>{language === 'ar' ? 'حقيبة المشتريات' : 'Shopping Cart Bag'}</h3>
           <button className="close-panel-btn" onClick={onClose}><X size={20} /></button>
@@ -207,12 +181,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     <span className="cart-price-tag">{item.price} EGP</span>
                     <div className="cart-counter-controls">
                       <button type="button" onClick={() => updateQuantity(item.id, -1, item.selected_color ?? undefined)}>-</button>
-                        <span className="count-qty">{item.quantity}</span>
-                        <button type="button" onClick={() => updateQuantity(item.id, 1, item.selected_color ?? undefined)}>+</button>
-                        </div>
+                      <span className="count-qty">{item.quantity}</span>
+                      <button type="button" onClick={() => updateQuantity(item.id, 1, item.selected_color ?? undefined)}>+</button>
+                    </div>
                   </div>
-                    <button type="button" className="remove-item-btn" onClick={() => removeFromCart(item.id, item.selected_color ?? undefined)}>
-                        <Trash2 size={16} />
+                  <button type="button" className="remove-item-btn" onClick={() => removeFromCart(item.id, item.selected_color ?? undefined)}>
+                    <Trash2 size={16} />
                   </button>
                 </div>
               ))}
@@ -233,10 +207,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
               <div className="input-group select-wrapper">
                 <label className="select-caption">{language === 'ar' ? 'اختر المحافظة' : 'Select Governorate'}</label>
-                <select value={gov} onChange={e => setGov(e.target.value)} className="gov-native-dropdown">
-                  {Object.entries(GOVERNORATE_SHIPPING_MATRIX).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {language === 'ar' ? value.ar : value.en} (+{value.cost} EGP)
+                <select value={selectedGovKey} onChange={e => setSelectedGovKey(e.target.value)} className="gov-native-dropdown">
+                  {shippingOptions.map(option => (
+                    <option key={option.key_code} value={option.key_code}>
+                      {language === 'ar' ? option.name_ar : option.name_en} (+{option.cost} EGP)
                     </option>
                   ))}
                 </select>

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import { useLanguage } from '../../context/LanguageContext'; // Hooked up context
+import { useLanguage } from '../../context/LanguageContext';
+import toast from 'react-hot-toast';
 import './AdminOrdersPanel.css';
 
 export interface CustomerOrder {
@@ -45,7 +46,7 @@ const AdminOrdersPanel = ({
   loadingOrders: boolean;
   onRefresh: () => void;
 }) => {
-  const { t } = useLanguage(); // Initialize dynamic translation engine
+  const { t } = useLanguage(); 
 
   const handleUpdateStatus = async (orderId: number, currentStatus: string) => {
     const next = nextStatus(currentStatus);
@@ -53,13 +54,44 @@ const AdminOrdersPanel = ({
     if (!error) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: next } : o));
   };
 
-  const handleDeleteOrder = async (orderId: number) => {
-    if (!confirm(t(`Delete order #${orderId}? This cannot be undone.`, `هل أنت متأكد من حذف الطلب رقم #${orderId}؟ لا يمكن التراجع عن هذا الإجراء.`))) return;
-    const { error } = await supabase.from('orders').delete().eq('id', orderId);
-    if (!error) setOrders(prev => prev.filter(o => o.id !== orderId));
+const handleDeleteOrder = (orderId: number) => {
+    toast((tToast) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <span style={{ fontWeight: 600, color: '#0f172a' }}>
+          {t(`Delete order #${orderId}? This cannot be undone.`, `هل أنت متأكد من حذف الطلب رقم #${orderId}؟ لا يمكن التراجع عن هذا الإجراء.`)}
+        </span>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => toast.dismiss(tToast.id)}
+            style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+          >
+            {t('Cancel', 'إلغاء')}
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(tToast.id);
+              const { error } = await supabase.from('orders').delete().eq('id', orderId);
+              if (!error) {
+                setOrders(prev => prev.filter(o => o.id !== orderId));
+                toast.success(t('Order Deleted', 'تم حذف الطلب'));
+              } else {
+                toast.error(error.message);
+              }
+            }}
+            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+          >
+            {t('Yes, Delete', 'نعم، احذف')}
+          </button>
+        </div>
+      </div>
+    ), 
+    { 
+      duration: Infinity,
+      position: 'top-center',
+      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' } 
+    });
   };
 
-  // Helper method to resolve localized tracking status dynamically
   const translateStatus = (status: string) => {
     switch (status) {
       case 'Pending': return t('Pending', 'قيد الانتظار');
@@ -103,12 +135,12 @@ const AdminOrdersPanel = ({
                   <td className="order-id-cell">#{order.id}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{order.customer_name}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{order.customer_email}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{order.customer_phone}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.customer_email}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.customer_phone}</div>
                   </td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{order.governorate}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{order.detailed_address}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.detailed_address}</div>
                   </td>
                   <td>
                     <ul className="order-items-list">
@@ -121,7 +153,7 @@ const AdminOrdersPanel = ({
                   </td>
                   <td>
                     <div style={{ fontWeight: 700 }}>{order.total} {t('EGP', 'ج.م')}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--primary-700)' }}>
                       {t('Delivery:', 'الشحن:')} {order.shipping_cost} {t('EGP', 'ج.م')}
                     </div>
                   </td>
