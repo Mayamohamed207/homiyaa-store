@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
 import { Layers, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -15,12 +16,27 @@ type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'latest';
 export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { language } = useLanguage();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
 
-  useEffect(() => {
+  // Fetch wishlist IDs for the logged-in user
+      useEffect(() => {
+        if (!user) { setWishlistIds(new Set()); return; }
+        supabase
+          .from('wishlists')
+          .select('product_id')
+          .eq('user_id', user.id)
+          .then(({ data }) => {
+            setWishlistIds(new Set((data || []).map((w: any) => w.product_id)));
+          });
+      }, [user]);
+
+      // Listen for category selection events...
+      useEffect(() => {
     const loadStoreProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -92,9 +108,11 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       return matchesEn || matchesAr;
     });
 
-    if (selectedCategory !== 'all')
-      result = result.filter(item => item.category_en.toLowerCase() === selectedCategory.toLowerCase());
-
+    if (selectedCategory === '__wishlist__') {
+        result = result.filter(item => wishlistIds.has(item.id));
+      } else if (selectedCategory !== 'all') {
+        result = result.filter(item => item.category_en.toLowerCase() === selectedCategory.toLowerCase());
+      }
     result.sort((a, b) => {
       const priceA = a.discount_price ?? a.price;
       const priceB = b.discount_price ?? b.price;
@@ -110,7 +128,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     });
 
     return result;
-  }, [products, searchQuery, selectedCategory, sortBy]);
+}, [products, searchQuery, selectedCategory, sortBy, wishlistIds]);
 
   if (loading) {
     return (
@@ -135,7 +153,10 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
               value={selectedCategory}
               onChange={e => handleDropdownCategorySelect(e.target.value)}
             >
-              <option value="all">{language === 'ar' ? 'جميع المنتجات' : 'All Products'}</option>
+             <option value="all">{language === 'ar' ? 'جميع المنتجات' : 'All Products'}</option>
+              {user && (
+                <option value="__wishlist__">{language === 'ar' ? '❤️ المفضلة' : '❤️ Wishlist'}</option>
+              )}
               {uniqueCategories.map(cat => (
                 <option key={cat.value} value={cat.value.toLowerCase()}>{cat.label}</option>
               ))}

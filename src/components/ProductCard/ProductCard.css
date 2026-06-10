@@ -278,3 +278,7 @@
   width: 14px;
   border-radius: 4px;
 }
+.product-favorite.wishlisted {
+  background: #fff0f0;
+  border-color: #fca5a5;
+}

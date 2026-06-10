@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../../supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +58,37 @@ const ProductCard = ({
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+
+  const { user } = useAuth();
+  const [wishlisted, setWishlisted] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('wishlists')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', product.id)
+      .maybeSingle()
+      .then(({ data }) => setWishlisted(!!data));
+  }, [user, product.id]);
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error(language === 'ar' ? 'سجل دخولك أولاً' : 'Please sign in first');
+      return;
+    }
+    if (wishlisted) {
+      await supabase.from('wishlists').delete().match({ user_id: user.id, product_id: product.id });
+      setWishlisted(false);
+      toast.success(language === 'ar' ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
+    } else {
+      await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+      setWishlisted(true);
+      toast.success(language === 'ar' ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+    }
+  };
 
   const name = language === 'ar' ? product.name_ar : product.name_en;
   const category = language === 'ar' ? product.category_ar : product.category_en;
@@ -134,11 +167,16 @@ const ProductCard = ({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="product-favorite"
-            aria-label="Add to favorites"
-            onClick={e => e.stopPropagation()}
+            className={`product-favorite ${wishlisted ? 'wishlisted' : ''}`}
+            aria-label="Toggle wishlist"
+            onClick={handleWishlistToggle}
           >
-            <Heart className="icon" size={18} />
+            <Heart
+              className="icon"
+              size={18}
+              fill={wishlisted ? '#ef4444' : 'none'}
+              color={wishlisted ? '#ef4444' : 'currentColor'}
+            />
           </motion.button>
         )}
 

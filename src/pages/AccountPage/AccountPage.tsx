@@ -160,8 +160,9 @@ const AccountPage = () => {
       .channel('user-orders-live')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+       { event: 'UPDATE', schema: 'public', table: 'orders' },
         (payload) => {
+          if (String(payload.new.user_id) !== String(user.id)) return;
           setOrders((prev) =>
             prev.map((o) =>
               String(o.id) === String(payload.new.id)
@@ -169,7 +170,7 @@ const AccountPage = () => {
                 : o
             )
           );
-        }
+}
       )
       .subscribe();
 
