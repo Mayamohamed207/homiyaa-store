@@ -220,7 +220,7 @@ const AccountPage = () => {
         </button>
         <button onClick={() => setActiveTab('wishlist')} className={`account-tab-btn ${activeTab === 'wishlist' ? 'active-tab' : ''}`} type="button">
           <Heart size={17} />
-          <span>{t('Wishlist', 'المفضلة')} ({wishlist.length})</span>
+          <span>{t('Your Favorites', 'المفضلة')} ({wishlist.length})</span>
         </button>
       </div>
 

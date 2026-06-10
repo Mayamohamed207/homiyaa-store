@@ -155,7 +155,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             >
              <option value="all">{language === 'ar' ? 'جميع المنتجات' : 'All Products'}</option>
               {user && (
-                <option value="__wishlist__">{language === 'ar' ? '❤️ المفضلة' : '❤️ Wishlist'}</option>
+                <option value="__wishlist__">{language === 'ar' ? '❤️ المفضلة' : ' Your Favorites ❤️'}</option>
               )}
               {uniqueCategories.map(cat => (
                 <option key={cat.value} value={cat.value.toLowerCase()}>{cat.label}</option>

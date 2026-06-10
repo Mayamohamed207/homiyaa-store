@@ -82,11 +82,11 @@ const ProductCard = ({
     if (wishlisted) {
       await supabase.from('wishlists').delete().match({ user_id: user.id, product_id: product.id });
       setWishlisted(false);
-      toast.success(language === 'ar' ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
+      toast.success(language === 'ar' ? 'تم الحذف من المفضلة' : 'Removed from Favorites');
     } else {
       await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
       setWishlisted(true);
-      toast.success(language === 'ar' ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+      toast.success(language === 'ar' ? 'تمت الإضافة للمفضلة' : 'Added to Favorites');
     }
   };
 

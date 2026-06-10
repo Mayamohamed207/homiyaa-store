@@ -181,7 +181,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
 
                       <button onClick={() => navigate('/account')} className="dropdown-item">
                         <Heart size={16} />
-                        <span>{t('Wishlist', 'قائمة المفضلة')}</span>
+                        <span>{t('Favorites', 'قائمة المفضلة')}</span>
                       </button>
 
                       {/* STRICT GUARD: Admin option is never generated unless email is validated against safe list */}
