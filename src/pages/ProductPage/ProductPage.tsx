@@ -93,14 +93,6 @@ const ProductPage = () => {
       </div>
     );
   }
-  useEffect(() => {
-  if (!user || !product) return;
-  supabase.from('wishlists')
-    .select('id')
-    .match({ user_id: user.id, product_id: product.id })
-    .single()
-    .then(({ data }) => { if (data) setWishlisted(true); });
-}, [user, product]);
 
   const images = product.product_images || [];
   const colors = product.product_colors || [];
