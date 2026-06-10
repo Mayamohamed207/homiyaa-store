@@ -535,8 +535,8 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
               <div className="category-label-row">
                 <label>{isCustomCategory ? t('Custom Category Setup *', 'إعداد قسم مخصص *') : t('Assigned Product Category *', 'قسم المنتج الحالي *')}</label>
                 <button type="button" className="category-toggle-btn" onClick={() => setIsCustomCategory(!isCustomCategory)}>
-                  {isCustomCategory ? <List size={14} /> : <FolderPlus size={14} />}
-                  {isCustomCategory ? t('Pick Existing', 'اختر من الأقسام الحالية') : t('Define Brand New Category', 'إنشاء قسم جديد تماماً')}
+                  {isCustomCategory ? <List size={14} className="btn-icon" /> : <FolderPlus size={14} className="btn-icon" />}
+                  <span>{isCustomCategory ? t('Pick Existing', 'اختر من الأقسام الحالية') : t('Define Brand New Category', 'إنشاء قسم جديد تماماً')}</span>
                 </button>
               </div>
 
@@ -662,7 +662,7 @@ const AdminDashboard = ({ externalCategoryFilter }: AdminDashboardProps) => {
                     <button type="button" className="color-drag-handle" disabled={isUploading} style={{ cursor: 'grab', background: 'none', border: 'none', display: 'flex', alignItems: 'center', padding: '0 4px', color: '#64748b' }}>
                       <GripHorizontal size={16} />
                     </button>
-                    <div className="color-text-inputs-inputs-wrapper">
+                    <div className="color-text-inputs-wrapper">
                       <input type="text" placeholder={t('English Label', 'اسم اللون بالإنجليزي')} disabled={isUploading} value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
                       <input type="text" placeholder={t('Arabic Label', 'اسم اللون بالعربي')} disabled={isUploading} value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} dir="rtl" />
                     </div>
