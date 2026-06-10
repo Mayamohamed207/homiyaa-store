@@ -206,13 +206,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
                     <span className="cart-price-tag">{item.price} EGP</span>
                     <div className="cart-counter-controls">
-                      <button type="button" onClick={() => updateQuantity(item.id, -1)}>-</button>
-                      <span className="count-qty">{item.quantity}</span>
-                      <button type="button" onClick={() => updateQuantity(item.id, 1)}>+</button>
-                    </div>
+                      <button type="button" onClick={() => updateQuantity(item.id, -1, item.selected_color ?? undefined)}>-</button>
+                        <span className="count-qty">{item.quantity}</span>
+                        <button type="button" onClick={() => updateQuantity(item.id, 1, item.selected_color ?? undefined)}>+</button>
+                        </div>
                   </div>
-                  <button type="button" className="remove-item-btn" onClick={() => removeFromCart(item.id)}>
-                    <Trash2 size={16} />
+                    <button type="button" className="remove-item-btn" onClick={() => removeFromCart(item.id, item.selected_color ?? undefined)}>
+                        <Trash2 size={16} />
                   </button>
                 </div>
               ))}
