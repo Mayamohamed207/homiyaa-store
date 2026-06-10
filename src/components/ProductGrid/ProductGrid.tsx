@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
-import { Layers, ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import ProductCard, { Product, ProductColor } from '../ProductCard/ProductCard';
@@ -23,51 +23,40 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
 
-  // Fetch wishlist IDs for the logged-in user
-      useEffect(() => {
-        if (!user) { setWishlistIds(new Set()); return; }
-        supabase
-          .from('wishlists')
-          .select('product_id')
-          .eq('user_id', user.id)
-          .then(({ data }) => {
-            setWishlistIds(new Set((data || []).map((w: any) => w.product_id)));
-          });
-      }, [user]);
+  useEffect(() => {
+    if (!user) { setWishlistIds(new Set()); return; }
+    supabase
+      .from('wishlists')
+      .select('product_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setWishlistIds(new Set((data || []).map((w: any) => w.product_id)));
+      });
+  }, [user]);
 
-      // Listen for category selection events...
-      useEffect(() => {
+  useEffect(() => {
     const loadStoreProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
         .order('id', { ascending: false });
-
       if (!error && data) setProducts(data);
       setLoading(false);
     };
-
     loadStoreProducts();
   }, []);
 
-  // Listen for category selection events published by the Footer layout
   useEffect(() => {
     const handleGlobalCategoryChange = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail) {
-        setSelectedCategory(customEvent.detail);
-      }
+      if (customEvent.detail) setSelectedCategory(customEvent.detail);
     };
-
     window.addEventListener('storeCategoryChanged', handleGlobalCategoryChange);
-    return () => {
-      window.removeEventListener('storeCategoryChanged', handleGlobalCategoryChange);
-    };
+    return () => window.removeEventListener('storeCategoryChanged', handleGlobalCategoryChange);
   }, []);
 
-  // Sync dropdown shifts outwards to footer layout references
-  const handleDropdownCategorySelect = (value: string) => {
+  const handleCategorySelect = (value: string) => {
     setSelectedCategory(value);
     const event = new CustomEvent('storeCategoryChanged', { detail: value });
     window.dispatchEvent(event);
@@ -77,7 +66,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     const activePrice = item.discount_price ? item.discount_price : item.price;
     const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
     const dynamicMainImage = item.product_images?.[0]?.image_url || fallbackImage;
-
     if (addToCart) {
       addToCart({
         id: item.id,
@@ -95,24 +83,35 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     const categoriesMap = new Map<string, string>();
     products.forEach(p => {
       if (p.category_en && p.category_ar)
-        categoriesMap.set(p.category_en.trim(), language === 'ar' ? p.category_ar.trim() : p.category_en.trim());
+        categoriesMap.set(
+          p.category_en.trim(),
+          language === 'ar' ? p.category_ar.trim() : p.category_en.trim()
+        );
     });
-    return Array.from(categoriesMap.entries()).map(([enVal, localizedLabel]) => ({ value: enVal, label: localizedLabel }));
+    return Array.from(categoriesMap.entries()).map(([enVal, localizedLabel]) => ({
+      value: enVal,
+      label: localizedLabel
+    }));
   }, [products, language]);
 
   const processedProducts = useMemo(() => {
     let result = products.filter(item => {
-      const matchesEn = item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        item.category_en.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesAr = item.name_ar.includes(searchQuery) || item.category_ar.includes(searchQuery);
+      const matchesEn =
+        item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category_en.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesAr =
+        item.name_ar.includes(searchQuery) || item.category_ar.includes(searchQuery);
       return matchesEn || matchesAr;
     });
 
     if (selectedCategory === '__wishlist__') {
-        result = result.filter(item => wishlistIds.has(item.id));
-      } else if (selectedCategory !== 'all') {
-        result = result.filter(item => item.category_en.toLowerCase() === selectedCategory.toLowerCase());
-      }
+      result = result.filter(item => wishlistIds.has(item.id));
+    } else if (selectedCategory !== 'all') {
+      result = result.filter(
+        item => item.category_en.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
     result.sort((a, b) => {
       const priceA = a.discount_price ?? a.price;
       const priceB = b.discount_price ?? b.price;
@@ -123,12 +122,18 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       }
       if (sortBy === 'price-asc') return priceA - priceB;
       if (sortBy === 'price-desc') return priceB - priceA;
-      if (sortBy === 'latest') return b.id - a.id;
-      return 0;
+      return b.id - a.id;
     });
 
     return result;
-}, [products, searchQuery, selectedCategory, sortBy, wishlistIds]);
+  }, [products, searchQuery, selectedCategory, sortBy, wishlistIds]);
+
+  const sortLabel = {
+    latest:      language === 'ar' ? 'الأحدث'         : 'Latest',
+    popular:     language === 'ar' ? 'الأكثر شعبية'   : 'Popular',
+    'price-asc': language === 'ar' ? 'السعر: الأقل'   : 'Price ↑',
+    'price-desc':language === 'ar' ? 'السعر: الأعلى'  : 'Price ↓',
+  }[sortBy];
 
   if (loading) {
     return (
@@ -142,45 +147,59 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   return (
     <section id="shop" className="product-grid-section">
       <div className="container">
-        <div className="store-controls-wrapper">
-          <div className="control-group">
-            <label className="control-label">
-              <Layers size={16} />
-              {language === 'ar' ? 'التصنيف' : 'Category'}
-            </label>
-            <select
-              className="store-control-select"
-              value={selectedCategory}
-              onChange={e => handleDropdownCategorySelect(e.target.value)}
-            >
-             <option value="all">{language === 'ar' ? 'جميع المنتجات' : 'All Products'}</option>
-              {user && (
-                <option value="__wishlist__">{language === 'ar' ? '❤️ المفضلة' : ' Your Favorites ❤️'}</option>
-              )}
-              {uniqueCategories.map(cat => (
-                <option key={cat.value} value={cat.value.toLowerCase()}>{cat.label}</option>
-              ))}
-            </select>
-          </div>
 
-          <div className="control-group">
-            <label className="control-label">
-              <ArrowUpDown size={16} />
-              {language === 'ar' ? 'ترتيب حسب' : 'Sort By'}
-            </label>
+        {/* ── Category pills ── */}
+        <div className="category-pills-row">
+          <button
+            className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => handleCategorySelect('all')}
+          >
+            {language === 'ar' ? 'الكل' : 'All'}
+          </button>
+
+          {user && (
+            <button
+              className={`category-pill ${selectedCategory === '__wishlist__' ? 'active' : ''}`}
+              onClick={() => handleCategorySelect('__wishlist__')}
+            >
+              {language === 'ar' ? '❤️ المفضلة' : '❤️ Favorites'}
+            </button>
+          )}
+
+          {uniqueCategories.map(cat => (
+            <button
+              key={cat.value}
+              className={`category-pill ${selectedCategory === cat.value.toLowerCase() ? 'active' : ''}`}
+              onClick={() => handleCategorySelect(cat.value.toLowerCase())}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Section header ── */}
+        <div className="section-header">
+          <span className="section-title">
+            {language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks'}
+          </span>
+          <div className="sort-wrapper">
+            <button className="sort-btn">
+              <ArrowUpDown size={13} />
+              {language === 'ar' ? 'ترتيب' : 'Sort'} · {sortLabel}
+            </button>
             <select
-              className="store-control-select"
               value={sortBy}
               onChange={e => setSortBy(e.target.value as SortOption)}
             >
-              <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest Arrivals'}</option>
-              <option value="popular">{language === 'ar' ? 'الشعبية أولاً' : 'Popular First'}</option>
-              <option value="price-asc">{language === 'ar' ? 'السعر: من الأقل للأعلى' : 'Price: Low to High'}</option>
-              <option value="price-desc">{language === 'ar' ? 'السعر: من الأعلى للأقل' : 'Price: High to Low'}</option>
+              <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest'}</option>
+              <option value="popular">{language === 'ar' ? 'الأكثر شعبية' : 'Popular'}</option>
+              <option value="price-asc">{language === 'ar' ? 'السعر: الأقل للأعلى' : 'Price: Low to High'}</option>
+              <option value="price-desc">{language === 'ar' ? 'السعر: الأعلى للأقل' : 'Price: High to Low'}</option>
             </select>
           </div>
         </div>
 
+        {/* ── Grid or empty state ── */}
         {processedProducts.length === 0 ? (
           <div className="empty-store-state">
             <h3>{language === 'ar' ? 'لم يتم العثور على نتائج' : 'No products found'}</h3>
@@ -192,7 +211,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             {(selectedCategory !== 'all' || searchQuery !== '') && (
               <button
                 className="reset-filters-btn"
-                onClick={() => { handleDropdownCategorySelect('all'); setSortBy('popular'); }}
+                onClick={() => { handleCategorySelect('all'); setSortBy('latest'); }}
               >
                 {language === 'ar' ? 'إعادة تعيين' : 'Reset Filters'}
               </button>
@@ -210,6 +229,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             ))}
           </div>
         )}
+
       </div>
     </section>
   );
