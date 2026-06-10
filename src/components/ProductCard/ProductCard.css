@@ -180,3 +180,51 @@
     border-radius: 20px;
   }
 }
+/* ── Selected color circle states ── */
+.product-color.selected {
+  border-color: var(--primary-600) !important;
+  transform: scale(1.18);
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--primary-500);
+}
+
+/* ── Administrative modifications row ── */
+.admin-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-edit-action-btn,
+.admin-delete-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--primary-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  background-color: var(--white);
+  transition: all 0.2s ease;
+}
+
+.admin-edit-action-btn {
+  color: #4f46e5;
+}
+.admin-edit-action-btn:hover {
+  background-color: #e0e7ff;
+  border-color: #818cf8;
+}
+
+.admin-delete-action-btn {
+  color: #ef4444;
+}
+.admin-delete-action-btn:hover {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.admin-card-layout {
+  border-color: var(--primary-300) !important;
+  box-shadow: var(--shadow-sm);
+}

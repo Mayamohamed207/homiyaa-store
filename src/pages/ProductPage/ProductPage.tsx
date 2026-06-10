@@ -43,7 +43,6 @@ const ProductPage = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
 
-  // Touch swipe
   const touchStartX = { current: 0 };
   const touchStartY = { current: 0 };
 
@@ -92,6 +91,8 @@ const ProductPage = () => {
   const images = product.product_images || [];
   const colors = product.product_colors || [];
   const currentImage = images.length > 0 ? images[activeIdx].image_url : FALLBACK_IMAGE;
+  const mainProductCartImage = images.length > 0 ? images[0].image_url : FALLBACK_IMAGE;
+  
   const name = isRTL ? product.name_ar : product.name_en;
   const category = isRTL ? product.category_ar : product.category_en;
   const description = isRTL ? product.description_ar : product.description_en;
@@ -102,13 +103,29 @@ const ProductPage = () => {
 
   const handleAddToCart = () => {
     if (!addToCart || product.is_sold_out) return;
+
+    if (colors.length > 0 && selectedColor === null) {
+      alert(isRTL ? '⚠️ يجب اختيار لون للمنتج أولاً قبل إضافته إلى السلة!' : '⚠️ Please pick a color option on this item configuration layout grid before checking out!');
+      return;
+    }
+
+    let chosenColorPayload = null;
+    if (selectedColor !== null && colors[selectedColor]) {
+      chosenColorPayload = {
+        color_code: colors[selectedColor].color_code,
+        color_name_en: colors[selectedColor].color_name_en,
+        color_name_ar: colors[selectedColor].color_name_ar
+      };
+    }
+
     addToCart({
       id: product.id,
       name_en: product.name_en,
       name_ar: product.name_ar,
       price: displayPrice,
-      image: images[0]?.image_url || FALLBACK_IMAGE,
+      image: mainProductCartImage,
       quantity: 1,
+      selected_color: chosenColorPayload
     });
   };
 
@@ -116,7 +133,6 @@ const ProductPage = () => {
     <div className="pp-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="pp-container">
 
-        {/* Back button */}
         <button className="pp-back-btn" onClick={() => navigate(-1)}>
           <BackIcon size={18} />
           {isRTL ? 'العودة' : 'Back'}
@@ -124,10 +140,7 @@ const ProductPage = () => {
 
         <div className="pp-layout">
 
-          {/* ── Left: Image Gallery ── */}
           <div className="pp-gallery-col">
-
-            {/* Main image */}
             <div
               className="pp-main-image-wrap"
               onTouchStart={e => {
@@ -153,7 +166,6 @@ const ProductPage = () => {
                 draggable={false}
               />
 
-              {/* Badges */}
               <div className="pp-img-badges">
                 {product.is_sold_out && (
                   <span className="pp-badge pp-badge-sold">{isRTL ? 'نفذت الكمية' : 'Sold Out'}</span>
@@ -163,12 +175,10 @@ const ProductPage = () => {
                 )}
               </div>
 
-              {/* Wishlist */}
               <button className="pp-wishlist-btn" aria-label="Wishlist">
                 <Heart size={18} />
               </button>
 
-              {/* Arrow nav */}
               {images.length > 1 && (
                 <>
                   <button className="pp-arrow pp-arrow-prev" onClick={goPrev} aria-label="Previous">
@@ -178,7 +188,6 @@ const ProductPage = () => {
                     <NextIcon size={20} />
                   </button>
 
-                  {/* Dots */}
                   <div className="pp-dots">
                     {images.map((_, i) => (
                       <button
@@ -192,7 +201,6 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Thumbnail strip */}
             {images.length > 1 && (
               <div className="pp-thumb-strip">
                 {images.map((img, i) => (
@@ -208,13 +216,10 @@ const ProductPage = () => {
             )}
           </div>
 
-          {/* ── Right: Details ── */}
           <div className="pp-details-col">
-
             <p className="pp-cat-tag">{category}</p>
             <h1 className="pp-title">{name}</h1>
 
-            {/* Pricing */}
             <div className="pp-price-row">
               <span className="pp-price">{displayPrice} EGP</span>
               {product.discount_price && (
@@ -228,7 +233,6 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Stock */}
             {!product.is_sold_out && (
               <p className="pp-stock-note">
                 {product.stock_quantity <= 5
@@ -239,7 +243,6 @@ const ProductPage = () => {
 
             <hr className="pp-divider" />
 
-            {/* Colors */}
             {colors.length > 0 && (
               <div className="pp-colors-section">
                 <p className="pp-section-label">
@@ -265,7 +268,6 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Description */}
             {description && (
               <div className="pp-desc-section">
                 <p className="pp-section-label">{isRTL ? 'تفاصيل المنتج' : 'Product Details'}</p>
@@ -273,7 +275,6 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* CTA */}
             <div className="pp-cta-wrapper">
               <button
                 className={`pp-add-btn ${product.is_sold_out ? 'disabled' : ''}`}
@@ -286,8 +287,8 @@ const ProductPage = () => {
                   : (isRTL ? 'أضف إلى السلة' : 'Add to Cart')}
               </button>
             </div>
-
           </div>
+
         </div>
       </div>
     </div>

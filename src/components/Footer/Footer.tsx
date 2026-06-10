@@ -8,7 +8,7 @@ const Footer = () => {
   const { t } = useLanguage();
 
   return (
-    <footer className="footer">
+    <footer  id="contact" className="footer">
       <div className="container footer-container">
         
         {/* Brand Block */}

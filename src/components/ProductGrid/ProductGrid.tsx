@@ -1,38 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { ShoppingCart, Heart, Layers, ArrowUpDown } from 'lucide-react';
+import { Layers, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
-
-import Card from '../ui/Card/Card';
-import Badge from '../ui/Badge/Badge';
-import Button from '../ui/Button/Button';
+import ProductCard, { Product, ProductColor } from '../ProductCard/ProductCard';
 import './ProductGrid.css';
-
-interface ProductColor {
-  color_code: string;
-  color_name_en: string;
-  color_name_ar: string;
-}
-
-interface Product {
-  id: number;
-  name_en: string;
-  name_ar: string;
-  category_en: string;
-  category_ar: string;
-  description_en?: string;
-  description_ar?: string;
-  price: number;
-  discount_price: number | null;
-  stock_quantity: number;
-  is_sold_out: boolean;
-  is_popular: boolean;
-  product_images: { image_url: string }[];
-  product_colors: ProductColor[];
-}
 
 interface ProductGridProps {
   searchQuery: string;
@@ -40,131 +12,6 @@ interface ProductGridProps {
 
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'latest';
 
-/* ==========================================
-   1. PRODUCT CARD ITEM
-   ========================================== */
-const ProductCardItem = ({
-  item,
-  language,
-  onAddToCart,
-}: {
-  item: Product;
-  language: 'en' | 'ar';
-  onAddToCart: (product: Product) => void;
-}) => {
-  const navigate = useNavigate();
-  const [activeImgIndex, setActiveImgIndex] = useState(0);
-
-  const name = language === 'ar' ? item.name_ar : item.name_en;
-  const category = language === 'ar' ? item.category_ar : item.category_en;
-
-  const images = item.product_images || [];
-  const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
-  const currentImageUrl =
-    images.length > 0 && images[activeImgIndex]
-      ? images[activeImgIndex].image_url
-      : fallbackImage;
-
-  const colors = item.product_colors || [];
-
-  return (
-    <Card
-      className={`product-card ${item.is_sold_out ? 'sold-out' : ''}`}
-      onClick={() => navigate(`/product/${item.id}`)}
-      style={{ cursor: 'pointer' }}
-    >
-      <div className="product-image-container">
-        {item.is_sold_out && (
-          <Badge variant="secondary" className="product-badge sold-out-badge">
-            {language === 'ar' ? 'نفذت الكمية' : 'Sold Out'}
-          </Badge>
-        )}
-        {item.is_popular && !item.is_sold_out && (
-          <Badge variant="primary" className="product-badge popular-badge">
-            {language === 'ar' ? 'شائع' : 'Popular'}
-          </Badge>
-        )}
-
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="product-favorite"
-          aria-label="Add to favorites"
-          onClick={e => e.stopPropagation()}
-        >
-          <Heart className="icon" size={18} />
-        </motion.button>
-
-        <img src={currentImageUrl} alt={name} className="product-image" />
-
-        {images.length > 1 && (
-          <div className="card-image-dots">
-            {images.map((_, dotIdx) => (
-              <button
-                key={dotIdx}
-                type="button"
-                className={`image-dot ${dotIdx === activeImgIndex ? 'active' : ''}`}
-                onClick={e => {
-                  e.stopPropagation();
-                  setActiveImgIndex(dotIdx);
-                }}
-                title={language === 'ar' ? `عرض الصورة ${dotIdx + 1}` : `View image ${dotIdx + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="product-info">
-        {colors.length > 0 && (
-          <div className="product-colors">
-            {colors.map((c, idx) => (
-              <button
-                key={idx}
-                className="product-color"
-                style={{ backgroundColor: c.color_code }}
-                title={language === 'ar' ? c.color_name_ar : c.color_name_en}
-                aria-label={`Select color ${c.color_name_en}`}
-                onClick={e => e.stopPropagation()}
-              />
-            ))}
-          </div>
-        )}
-
-        <p className="product-category line-clamp-1">{category}</p>
-        <h3 className="product-name line-clamp-2">{name}</h3>
-
-        <div className="product-footer">
-          <div>
-            {item.discount_price ? (
-              <>
-                <span className="product-price">{item.discount_price} EGP</span>
-                <span className="product-old-price">{item.price} EGP</span>
-              </>
-            ) : (
-              <span className="product-price">{item.price} EGP</span>
-            )}
-          </div>
-
-          <div onClick={e => e.stopPropagation()}>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={item.is_sold_out}
-              onClick={() => onAddToCart(item)}
-            >
-              <ShoppingCart className="icon" size={18} />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-/* ==========================================
-   2. MAIN PRODUCT GRID
-   ========================================== */
 export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { language } = useLanguage();
   const { addToCart } = useCart();
@@ -188,15 +35,21 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     loadStoreProducts();
   }, []);
 
-  const handleAddToCartMapping = (item: Product) => {
+  const handleAddToCartMapping = (item: Product, chosenColor: ProductColor) => {
     const activePrice = item.discount_price ? item.discount_price : item.price;
     const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
-    const mainImage = item.product_images?.[0]?.image_url || fallbackImage;
+    const dynamicMainImage = item.product_images?.[0]?.image_url || fallbackImage;
 
     if (addToCart) {
-      addToCart({ id: item.id, name_en: item.name_en, name_ar: item.name_ar, price: activePrice, image: mainImage, quantity: 1 });
-    } else {
-      console.warn('Cart context handler missing.');
+      addToCart({
+        id: item.id,
+        name_en: item.name_en,
+        name_ar: item.name_ar,
+        price: activePrice,
+        image: dynamicMainImage,
+        quantity: 1,
+        selected_color: chosenColor
+      });
     }
   };
 
@@ -247,9 +100,8 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   }
 
   return (
-    <section className="product-grid-section">
+    <section id="shop" className="product-grid-section">
       <div className="container">
-
         <div className="store-controls-wrapper">
           <div className="control-group">
             <label className="control-label">
@@ -306,9 +158,9 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
         ) : (
           <div className="product-grid">
             {processedProducts.map(item => (
-              <ProductCardItem
+              <ProductCard
                 key={item.id}
-                item={item}
+                product={item}
                 language={language}
                 onAddToCart={handleAddToCartMapping}
               />

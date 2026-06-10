@@ -6,10 +6,10 @@ import emailjs from '@emailjs/browser';
 import { X, Trash2, ShoppingBag, Loader2, ShoppingCart } from 'lucide-react';
 import './CartDrawer.css';
 
-const EMAILJS_SERVICE_ID = 'Homiyaa';
-const EMAILJS_TEMPLATE_ID = 'template_pddlxeh';
-const EMAILJS_PUBLIC_KEY = 'Jc_qYBMeNsVRZ2Yio';
-const ADMIN_EMAIL = 'mayamohamed364@gmail.com';
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
 const GOVERNORATE_SHIPPING_MATRIX: Record<string, { en: string; ar: string; cost: number }> = {
   cairo: { en: 'Cairo', ar: 'القاهرة', cost: 50 },
@@ -192,7 +192,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="cart-items-wrapper-list">
               {cart.map(item => (
                 <div key={item.id} className="cart-item-row">
-                  <img src={item.image} alt={item.name_en} className="cart-thumb" />
+                  <img src={item.image || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80'} alt={item.name_en} className="cart-thumb" />
                   <div className="cart-details-info">
                     <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
                     <span className="cart-price-tag">{item.price} EGP</span>

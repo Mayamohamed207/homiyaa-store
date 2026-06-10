@@ -1,0 +1,115 @@
+/* Delivery Inventory System Interfaces */
+.orders-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.orders-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.orders-panel-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.orders-panel-title p {
+  margin: 4px 0 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.refresh-logs-btn {
+  background: #f1f5f9;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+/* Data Log Structural Layout Matrix */
+.orders-table-wrapper {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.orders-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.orders-data-table th {
+  padding: 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.orders-data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+.order-id-cell {
+  font-weight: bold;
+  color: #0f172a;
+}
+
+/* Itemized Order Breakdowns */
+.order-items-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #334155;
+}
+
+.order-items-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* Operational Interfacing Handlers */
+.status-update-badge {
+  padding: 6px 14px;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.order-action-delete-btn {
+  background: #fff0f0;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  border-radius: 0.375rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-action-delete-btn:hover {
+  background: #fee2e2;
+}
+
+.orders-empty-state {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 1rem;
+}

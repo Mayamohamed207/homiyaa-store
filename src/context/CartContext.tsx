@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface CartItem {
   id: number;
@@ -7,11 +7,16 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  selected_color?: {
+    color_code: string;
+    color_name_en: string;
+    color_name_ar: string;
+  } | null;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: any) => void;
+  addToCart: (product: any, chosenColor?: any) => void;
   removeFromCart: (id: number) => void;
   updateQuantity: (id: number, delta: number) => void;
   clearCart: () => void;
@@ -20,28 +25,93 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
 
-  const addToCart = (product: any) => {
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  // 1. Initial State Load with Fallback Error Protection Block
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (!savedCart) return [];
+
+      const parsedCart = JSON.parse(savedCart);
+      if (!Array.isArray(parsedCart)) return [];
+
+      // Clean old object array formats down to clean flat string paths safely on boot
+      return parsedCart.map((item: any) => {
+        let flatImage = FALLBACK_IMAGE;
+        if (typeof item.image === 'string') {
+          flatImage = item.image;
+        } else if (item.product_images && Array.isArray(item.product_images) && item.product_images[0]) {
+          flatImage = item.product_images[0].image_url || flatImage;
+        } else if (item.image_url) {
+          flatImage = item.image_url;
+        }
+
+        return {
+          ...item,
+          image: flatImage
+        };
+      });
+    } catch (error) {
+      console.error("Failed parsing cart out of localStorage:", error);
+      return [];
+    }
+  });
+
+  // 2. Sync State modifications into cache automatically
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const addToCart = (product: any, chosenColor: any = null) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      const activePrice = product.discount_price ?? product.price;
-      const imgUrl = product.product_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
+      // Extract properties safely whether passed a raw database item or a pre-mapped catalog item
+      const productId = product.id;
+      const nameEn = product.name_en;
+      const nameAr = product.name_ar;
       
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      const activePrice = product.discount_price !== undefined 
+        ? (product.discount_price ?? product.price) 
+        : product.price;
+
+      // CRITICAL SAFEGUARD: Safe extraction check avoiding '0' reading runtime crash error
+      let imgUrl = FALLBACK_IMAGE;
+      if (typeof product.image === 'string') {
+        imgUrl = product.image;
+      } else if (product.product_images && Array.isArray(product.product_images) && product.product_images[0]) {
+        imgUrl = product.product_images[0].image_url || imgUrl;
+      } else if (product.image_url) {
+        imgUrl = product.image_url;
+      }
+
+      // Extract the selected color attribute variant data safely
+      const targetColor = chosenColor || product.selected_color || null;
+
+      // Match item uniqueness by both ID and its variant color choice
+      const existingIndex = prev.findIndex((item) => 
+        item.id === productId && 
+        item.selected_color?.color_code === targetColor?.color_code
+      );
+
+      if (existingIndex > -1) {
+        return prev.map((item, idx) =>
+          idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, {
-        id: product.id,
-        name_en: product.name_en,
-        name_ar: product.name_ar,
-        price: Number(activePrice),
-        image: imgUrl,
-        quantity: 1
-      }];
+
+      return [
+        ...prev,
+        {
+          id: productId,
+          name_en: nameEn,
+          name_ar: nameAr,
+          price: Number(activePrice),
+          image: imgUrl,
+          quantity: 1,
+          selected_color: targetColor
+        }
+      ];
     });
   };
 
@@ -51,9 +121,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const updateQuantity = (id: number, delta: number) => {
     setCart((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-      )
+      prev
+        .map((item) => (item.id === id ? { ...item, quantity: item.quantity + delta } : item))
+        .filter((item) => item.quantity > 0)
     );
   };
 

@@ -2,8 +2,8 @@ import { useState, Dispatch, SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, User, Menu, Search, X, Globe } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { useCart } from '../../context/CartContext'; // Added Cart State Hook Integration
-import CartDrawer from '../CartDrawer/CartDrawer'; // Reference Path to Drawer Panel File
+import { useCart } from '../../context/CartContext'; 
+import CartDrawer from '../CartDrawer/CartDrawer'; 
 import './Navbar.css';
 
 interface NavbarProps {
@@ -13,15 +13,26 @@ interface NavbarProps {
 
 const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false); // Added Drawer View State
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false); 
   const { t, toggleLanguage, language } = useLanguage();
-  const { cartCount } = useCart(); // Read Live Quantity Counts
+  const { cartCount } = useCart(); 
 
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
     if (isSearchOpen) {
       setSearchQuery('');
     }
+  };
+
+  const handleMobileScroll = (targetId: string) => {
+    setIsMobileMenuOpen(false);
+    setTimeout(() => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
   };
 
   return (
@@ -35,7 +46,6 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
         <div className="container">
           <div className="navbar-content">
             
-            {/* Logo and Brand Title - Locked to the Left Side */}
             <motion.div
               whileTap={{ scale: 0.98 }}
               className="navbar-logo-container"
@@ -51,15 +61,11 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
               </div>
             </motion.div>
 
-            {/* Navigation Links - Centered */}
             <div className="navbar-links">
-              <a href="#" className="navbar-link">{t('Shop', 'المتجر')}</a>
-              <a href="#" className="navbar-link">{t('Products', 'المنتجات')}</a>
-              <a href="#" className="navbar-link">{t('About', 'من نحن')}</a>
-              <a href="#" className="navbar-link">{t('Contact', 'اتصل بنا')}</a>
+              <a href="#shop" className="navbar-link">{t('Shop', 'المتجر')}</a>
+              <a href="#contact" className="navbar-link">{t('Contact', 'اتصل بنا')}</a>
             </div>
 
-            {/* Actions & Controls - Locked to the Right Side */}
             <div className="navbar-actions">
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -68,9 +74,9 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
                 type="button"
                 aria-label="Toggle Language"
               >
-                <Globe size={18} className="icon" />
+                <Globe className="icon icon-globe-svg" />
                 <span className="lang-toggle-text">
-                  {language === 'en' ? 'العربية' : 'EN'}
+                  {language === 'en' ? 'AR' : 'EN'}
                 </span>
               </motion.button>
 
@@ -85,12 +91,11 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
               
               <motion.button
                 whileTap={{ scale: 0.85 }}
-                className="navbar-icon-btn"
+                className="navbar-icon-btn user-profile-btn"
               >
                 <User className="icon" />
               </motion.button>
               
-              {/* Dynamic Shopping Cart Icon Badge - Opens Slider Sheet */}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setIsCartOpen(true)}
@@ -99,18 +104,7 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
               >
                 <ShoppingCart className="icon" />
                 {cartCount > 0 && (
-                  <span className="navbar-cart-badge" style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: language === 'ar' ? 'auto' : '-5px',
-                    left: language === 'ar' ? '-5px' : 'auto',
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    borderRadius: '50%',
-                    padding: '2px 6px',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold'
-                  }}>
+                  <span className="navbar-cart-badge">
                     {cartCount}
                   </span>
                 )}
@@ -119,8 +113,10 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
               <motion.button 
                 whileTap={{ scale: 0.85 }}
                 className="navbar-mobile-menu"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle Menu"
               >
-                <Menu className="icon" />
+                {isMobileMenuOpen ? <X className="icon" /> : <Menu className="icon" />}
               </motion.button>
             </div>
           </div>
@@ -159,9 +155,35 @@ const Navbar = ({ searchQuery, setSearchQuery }: NavbarProps) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="navbar-mobile-dropdown-panel"
+            >
+              <div className="mobile-dropdown-links-wrapper">
+                <button 
+                  className="mobile-navbar-link-btn" 
+                  onClick={() => handleMobileScroll('shop')}
+                >
+                  {t('Shop', 'المتجر')}
+                </button>
+                <button 
+                  className="mobile-navbar-link-btn" 
+                  onClick={() => handleMobileScroll('contact')}
+                >
+                  {t('Contact', 'اتصل بنا')}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
-      {/* Render Sliding Side Panel Component */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   );
