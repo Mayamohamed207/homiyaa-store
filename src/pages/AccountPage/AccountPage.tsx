@@ -155,24 +155,31 @@ const AccountPage = () => {
 
     fetchUserData();
 
-    /* ── realtime: patch status when admin changes it ─────── */
-    const channel = supabase
-      .channel('user-orders-live')
-      .on(
-        'postgres_changes',
-       { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
-          if (String(payload.new.user_id) !== String(user.id)) return;
-          setOrders((prev) =>
-            prev.map((o) =>
-              String(o.id) === String(payload.new.id)
-                ? { ...o, status: payload.new.status }
-                : o
-            )
-          );
-}
-      )
-      .subscribe();
+  const channel = supabase
+    .channel(`user-orders-${user.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `user_id=eq.${user.id}`,   // ← server-side filter
+      },
+      (payload) => {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === payload.new.id        // ← no String() casting needed
+              ? { ...o, status: payload.new.status }
+              : o
+          )
+        );
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime order updates active');
+      }
+    });
 
     return () => { supabase.removeChannel(channel); };
   }, [user, t, isRtl]);
@@ -224,7 +231,6 @@ const AccountPage = () => {
         </button>
       </div>
 
-      {/* Content */}
       <div className="account-tab-content-area">
         {dataLoading ? (
           <div className="tab-internal-loader"><Loader2 className="spinning" size={24} /></div>
