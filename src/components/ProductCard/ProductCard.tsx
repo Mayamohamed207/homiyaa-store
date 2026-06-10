@@ -29,6 +29,7 @@ export interface Product {
   stock_quantity: number;
   is_sold_out: boolean;
   is_popular: boolean;
+  is_new_arrival?: boolean;
   product_images: { image_url: string }[];
   product_colors: ProductColor[];
 }

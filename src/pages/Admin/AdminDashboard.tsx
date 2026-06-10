@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal } from 'lucide-react';
-import { ReactSortable } from 'react-sortablejs'; 
+import { ReactSortable } from 'react-sortablejs';
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
 import AdminSettingsPanel, { DbCategoryRecord, DbShippingRecord } from './AdminSettingsPanel';
@@ -23,6 +24,7 @@ interface ProductFormState {
   category_ar: string;
   stock_quantity: number | '';
   is_popular: boolean;
+  is_new_arrival?: boolean;
   is_sold_out: boolean;
   product_images?: { image_url: string }[];
   product_colors?: { color_code: string; color_name_en: string; color_name_ar: string }[];
@@ -46,16 +48,20 @@ type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
 type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
 
 const initialFormState: ProductFormState = {
   name_en: '', name_ar: '', description_en: '', description_ar: '',
   price: '', discount_price: '', category_en: '', category_ar: '',
-  stock_quantity: '', is_popular: false, is_sold_out: false,
+stock_quantity: '', is_popular: false, is_sold_out: false, is_new_arrival: false,
 };
 
 const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: string }) => {
   const { t, isRtl } = useLanguage();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
+  // ── All state declarations first ──
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTabOption>('products');
@@ -68,31 +74,52 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
   const [formImages, setFormImages] = useState<UnifiedImage[]>([]);
   const [colors, setColors] = useState<ColorInput[]>([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
   const [formData, setFormData] = useState<ProductFormState>(initialFormState);
-
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
-
-  // Shared state for the Settings Panel
   const [dbLiveCategories, setDbLiveCategories] = useState<DbCategoryRecord[]>([]);
   const [dbShippingRows, setDbShippingRows] = useState<DbShippingRecord[]>([]);
 
-  const { user } = useAuth();
-  const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+  const isAdmin = !!(user?.email && ADMIN_EMAILS.includes(user.email));
 
+  // ── All useEffects next (NO early returns before this point) ──
+
+  // Redirect signed-in non-admins
   useEffect(() => {
-    if (user?.email && ADMIN_EMAILS.includes(user.email)) {
+    if (user !== null && !isAdmin) {
+      navigate('/');
+      toast.error(t('Access denied.', 'غير مصرح لك بالدخول.'));
+    }
+  }, [user, isAdmin]);
+
+  // Auto-authenticate admin users without needing password
+  useEffect(() => {
+    if (isAdmin) {
       setIsAuthenticated(true);
     }
-  }, [user]);
+  }, [isAdmin]);
 
+  // Fetch data once authenticated
   useEffect(() => {
-    if (isAuthenticated) { 
-      fetchProducts(); 
-      fetchOrders(); 
+    if (isAuthenticated) {
+      fetchProducts();
+      fetchOrders();
       fetchStoreCategories();
       fetchShippingMatrix();
     }
   }, [isAuthenticated]);
+
+  // ── All handler functions ──
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      toast.success(t('Welcome back, Admin! 👋', 'مرحباً بك مجدداً أيها المسؤول! 👋'));
+    } else {
+      toast.error(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
+    }
+    setPassword('');
+  };
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -117,17 +144,6 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
   const fetchShippingMatrix = async () => {
     const { data } = await supabase.from('shipping_matrix').select('*').order('id', { ascending: true });
     if (data) setDbShippingRows(data);
-  };
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      toast.success(t('Welcome back, Admin! 👋', 'مرحباً بك مجدداً أيها المسؤول! 👋'));
-    } else {
-      toast.error(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
-    }
-    setPassword('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,6 +281,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       stock_quantity: product.stock_quantity,
       is_popular: product.is_popular,
       is_sold_out: product.is_sold_out,
+      is_new_arrival: product.is_new_arrival ?? false,
     });
     setFormImages((product.product_images || []).map((img, index) => ({
       id: `existing-${index}-${Math.random()}`,
@@ -300,32 +317,57 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     return result;
   }, [products, selectedCategory, sortBy]);
 
+  // ── Early returns AFTER all hooks ──
+
+  // Show password gate for unauthenticated non-admin visitors
   if (!isAuthenticated) {
     return (
       <div className="admin-lock-screen" dir={isRtl ? 'rtl' : 'ltr'}>
         <form onSubmit={handlePasswordSubmit} className="lock-card">
           <h3>{t('Homiyaa Admin', 'ادمن هوميا')}</h3>
-          <input type="password" placeholder={t('Enter Admin Password', 'أدخل كلمة مرور الادمن')} value={password} onChange={e => setPassword(e.target.value)} />
+          <input
+            type="password"
+            placeholder={t('Enter Admin Password', 'أدخل كلمة مرور الادمن')}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
           <button type="submit">{t('Unlock Admin Page', 'فتح صفحة الادمن')}</button>
         </form>
       </div>
     );
   }
 
+  // ── Main authenticated admin UI ──
   return (
     <div className="admin-container" dir={isRtl ? 'rtl' : 'ltr'}>
       {!isFormOpen && (
         <div className="admin-tabs">
-          <button onClick={() => setActiveTab('products')} className="admin-tab-btn" style={{ background: activeTab === 'products' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'products' ? 'var(--white)' : 'var(--primary-800)' }}>
+          <button
+            onClick={() => setActiveTab('products')}
+            className="admin-tab-btn"
+            style={{ background: activeTab === 'products' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'products' ? 'var(--white)' : 'var(--primary-800)' }}
+          >
             <Package size={18} /> {t('Products', 'المنتجات')}
           </button>
-          <button onClick={() => setActiveTab('orders')} className="admin-tab-btn" style={{ background: activeTab === 'orders' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'orders' ? 'var(--white)' : 'var(--primary-800)' }}>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className="admin-tab-btn"
+            style={{ background: activeTab === 'orders' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'orders' ? 'var(--white)' : 'var(--primary-800)' }}
+          >
             <ClipboardList size={18} /> {t('Orders', 'الطلبات')}
           </button>
-          <button onClick={() => setActiveTab('shipping')} className="admin-tab-btn" style={{ background: activeTab === 'shipping' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'shipping' ? 'var(--white)' : 'var(--primary-800)' }}>
+          <button
+            onClick={() => setActiveTab('shipping')}
+            className="admin-tab-btn"
+            style={{ background: activeTab === 'shipping' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'shipping' ? 'var(--white)' : 'var(--primary-800)' }}
+          >
             <Settings size={18} /> {t('Shipping', 'أسعار الشحن')}
           </button>
-          <button onClick={() => setActiveTab('categories')} className="admin-tab-btn" style={{ background: activeTab === 'categories' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'categories' ? 'var(--white)' : 'var(--primary-800)' }}>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className="admin-tab-btn"
+            style={{ background: activeTab === 'categories' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'categories' ? 'var(--white)' : 'var(--primary-800)' }}
+          >
             <Layers size={18} /> {t('Categories', 'الأقسام')}
           </button>
         </div>
@@ -335,7 +377,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
         activeTab === 'orders' ? (
           <AdminOrdersPanel orders={orders} setOrders={setOrders} loadingOrders={loadingOrders} onRefresh={fetchOrders} />
         ) : activeTab === 'shipping' || activeTab === 'categories' ? (
-          <AdminSettingsPanel 
+          <AdminSettingsPanel
             activeTab={activeTab}
             dbLiveCategories={dbLiveCategories}
             dbShippingRows={dbShippingRows}
@@ -360,7 +402,6 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                   ))}
                 </select>
               </div>
-
               <div className="filter-select-wrapper">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
                   <option value="latest">{t('Latest Added', 'المضاف حديثاً')}</option>
@@ -394,18 +435,14 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
             </div>
 
             <div className="field full-width">
-              <label>Select Category Lookup Channel</label>
-              <select 
-                className="admin-dropdown" 
-                required 
+              <label>Select Category</label>
+              <select
+                className="admin-dropdown"
+                required
                 value={formData.category_en || ''}
                 onChange={e => {
                   const matched = dbLiveCategories.find(c => c.name_en === e.target.value);
-                  setFormData({
-                    ...formData,
-                    category_en: e.target.value,
-                    category_ar: matched ? matched.name_ar : ''
-                  });
+                  setFormData({ ...formData, category_en: e.target.value, category_ar: matched ? matched.name_ar : '' });
                 }}
               >
                 <option value="" disabled>Choose Category Option...</option>
@@ -424,7 +461,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               <input type="number" step="0.01" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
             <div className="field full-width">
-              <label> Stock Count</label>
+              <label>Stock Count</label>
               <input type="number" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
 
@@ -457,12 +494,10 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 {colors.map(color => (
                   <div key={color.id} className="color-input-row-modern">
                     <div className="color-drag-handle" style={{ cursor: 'grab' }}><GripHorizontal size={16} /></div>
-                    
                     <div className="color-text-inputs-inputs-wrapper">
                       <input type="text" placeholder="English Label" value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
                       <input type="text" placeholder="اسم اللون بالعربي" value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} />
                     </div>
-                    
                     <div className="color-picker-and-delete">
                       <div className="color-picker-swatch-container">
                         <label className="color-swatch-label" style={{ backgroundColor: color.color_code }}>
@@ -472,7 +507,6 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                       </div>
                       <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(color.id)}><Trash2 size={16} /></button>
                     </div>
-
                   </div>
                 ))}
               </ReactSortable>
@@ -487,6 +521,15 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               <input type="checkbox" id="soldout" checked={formData.is_sold_out} onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })} />
               <label htmlFor="soldout">Out Of Stock</label>
             </div>
+            <div className="checkbox-field">
+            <input
+              type="checkbox"
+              id="new_arrival"
+              checked={formData.is_new_arrival ?? false}
+              onChange={e => setFormData({ ...formData, is_new_arrival: e.target.checked })}
+            />
+            <label htmlFor="new_arrival">New Arrival</label>
+          </div>
           </div>
 
           <div className="form-actions">

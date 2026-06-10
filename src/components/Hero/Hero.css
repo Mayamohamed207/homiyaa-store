@@ -178,3 +178,17 @@ html[dir="rtl"] .hero-cta:hover .icon {
     font-size: clamp(1.6rem, 3.5vw, 2.6rem);
   }
 }
+.hero-img-frame {
+  position: relative;
+  width: 100%;
+  height: 420px; /* adjust to match your current hero image height */
+}
+
+.hero-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
