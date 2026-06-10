@@ -81,7 +81,6 @@ const ProductPage = () => {
     );
   }
 
-  
   if (!product) {
     return (
       <div className="pp-not-found">

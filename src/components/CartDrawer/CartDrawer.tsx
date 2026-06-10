@@ -139,11 +139,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
         name_ar: i.name_ar,
         quantity: i.quantity,
         price: i.price,
+         image: i.image ?? null,
       })),
       subtotal,
       shipping_cost: shippingCost,
       total: grandTotal,
       status: 'Pending',
+      user_id: user?.id ?? null,
     };
 
     try {

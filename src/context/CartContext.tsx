@@ -16,9 +16,9 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: any, chosenColor?: any) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, delta: number) => void;
+  addToCart: (product: any, chosenColor?: CartItem['selected_color']) => void;
+  updateQuantity: (id: number, amount: number, selected_color?: CartItem['selected_color']) => void;
+  removeFromCart: (id: number, selected_color?: CartItem['selected_color']) => void;
   clearCart: () => void;
   cartCount: number;
 }
@@ -64,7 +64,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product: any, chosenColor: any = null) => {
+  const addToCart = (product: any, chosenColor: CartItem['selected_color'] = null) => {
     setCart((prev) => {
       // Extract properties safely whether passed a raw database item or a pre-mapped catalog item
       const productId = product.id;
@@ -115,15 +115,26 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const removeFromCart = (id: number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  const updateQuantity = (id: number, amount: number, selected_color?: CartItem['selected_color']) => {
+    setCart(prevCart =>
+      prevCart.map(item => {
+        const matchId = item.id === id;
+        const matchColor = item.selected_color?.color_code === selected_color?.color_code;
+        
+        if (matchId && matchColor) {
+          const newQty = item.quantity + amount;
+          return newQty > 0 ? { ...item, quantity: newQty } : item;
+        }
+        return item;
+      })
+    );
   };
 
-  const updateQuantity = (id: number, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => (item.id === id ? { ...item, quantity: item.quantity + delta } : item))
-        .filter((item) => item.quantity > 0)
+  const removeFromCart = (id: number, selected_color?: CartItem['selected_color']) => {
+    setCart(prevCart =>
+      prevCart.filter(item => 
+        !(item.id === id && item.selected_color?.color_code === selected_color?.color_code)
+      )
     );
   };
 

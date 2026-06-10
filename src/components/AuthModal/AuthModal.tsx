@@ -123,7 +123,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
                     required
-                  />
+                    />
                 </div>
               </div>
 
@@ -141,7 +141,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     onChange={(e) => setPhone(e.target.value)}
                     disabled={loading}
                     required
-                  />
+                    />
                 </div>
               </div>
             </>
@@ -161,7 +161,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 required
-              />
+                />
             </div>
           </div>
 
@@ -179,7 +179,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 required
-              />
+                />
               <button
                 type="button"
                 className="auth-eye-btn"
