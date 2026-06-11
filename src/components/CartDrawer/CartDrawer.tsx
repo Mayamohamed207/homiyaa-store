@@ -94,6 +94,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
         shipping_cost: `${shippingCost}`,
         total_price: `${grandTotal}`,
         to_email: email,
+        reply_to: email,
       },
       EMAILJS_PUBLIC_KEY
     );
