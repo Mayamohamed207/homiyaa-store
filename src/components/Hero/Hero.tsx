@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, History } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import './Hero.css';
 
@@ -12,16 +12,16 @@ const Hero = () => {
 
   const [newArrivals, setNewArrivals] = useState<{ image_url: string; name_en: string; name_ar: string }[]>([]);
   const [slideIndex, setSlideIndex] = useState(0);
+  const touchStartXRef = useRef(0);
 
-  // Fetch latest products with images
+  // Fetch new arrival products
   useEffect(() => {
-  supabase
-    .from('products')
-    .select('name_en, name_ar, product_images(image_url)')
-    .eq('is_new_arrival', true)
-    .order('id', { ascending: false })
-    .then(({ data }) => {
-
+    supabase
+      .from('products')
+      .select('name_en, name_ar, product_images(image_url)')
+      .eq('is_new_arrival', true)
+      .order('id', { ascending: false })
+      .then(({ data }) => {
         if (data) {
           const slides = data
             .filter((p: any) => p.product_images?.[0]?.image_url)
@@ -44,6 +44,18 @@ const Hero = () => {
     return () => clearInterval(timer);
   }, [newArrivals]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) setSlideIndex(i => (i + 1) % newArrivals.length);
+      else setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length);
+    }
+  };
+
   const handleSalesClick = () => {
     const element = document.getElementById('shop');
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -63,7 +75,13 @@ const Hero = () => {
         transition={{ duration: 0.4 }}
       >
         <div className="hero-badge">✦ {t('New Arrivals', 'وصل حديثاً')}</div>
-        <div className="hero-img-frame" style={{ position: 'relative', overflow: 'hidden' }}>
+
+        <div
+          className="hero-img-frame"
+          style={{ position: 'relative', overflow: 'hidden' }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <AnimatePresence mode="wait">
             {currentSlide ? (
               <motion.img
@@ -114,6 +132,24 @@ const Hero = () => {
               ))}
             </div>
           )}
+
+          {/* Arrow buttons — desktop only via CSS */}
+          {newArrivals.length > 1 && (
+            <>
+              <button
+                className="hero-arrow hero-arrow-left"
+                onClick={() => setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length)}
+              >
+                ‹
+              </button>
+              <button
+                className="hero-arrow hero-arrow-right"
+                onClick={() => setSlideIndex(i => (i + 1) % newArrivals.length)}
+              >
+                ›
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -133,7 +169,10 @@ const Hero = () => {
           transition={{ duration: 0.4, delay: 0.05 }}
           className="hero-subtitle"
         >
-          {t('Premium kitchen & home pieces, curated for warmth and beauty.', 'أدوات منزلية وأواني مطبخ فاخرة — مصنوعة لدفء حياتك اليومية.')}
+          {t(
+            'Premium kitchen & home pieces, curated for warmth and beauty.',
+            'أدوات منزلية وأواني مطبخ فاخرة — مصنوعة لدفء حياتك اليومية.'
+          )}
         </motion.p>
         <motion.div
           className="hero-actions"
