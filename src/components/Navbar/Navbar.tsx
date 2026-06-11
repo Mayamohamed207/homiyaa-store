@@ -35,9 +35,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
 
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
-    if (isSearchOpen) {
-      setSearchQuery('');
-    }
+    if (isSearchOpen) setSearchQuery('');
   };
 
   useEffect(() => {
@@ -55,7 +53,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Closes open menu overlays when switching page views
   useEffect(() => {
     setIsDropdownOpen(false);
     setIsMobileMenuOpen(false);
@@ -73,22 +70,23 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
     }
   };
 
-  // SMART ROUTING: Navigates back home if on /account or /product pages, then smoothly scrolls down
   const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, targetId: string) => {
-    e.preventDefault();
-    setIsMobileMenuOpen(false);
-    
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        const element = document.getElementById(targetId);
-        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 150);
-    } else {
-      const element = document.getElementById(targetId);
-      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  e.preventDefault();
+  setIsMobileMenuOpen(false);
+
+  const scrollToTarget = () => {
+    const element = document.getElementById(targetId);
+    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  if (location.pathname !== '/') {
+    navigate('/');
+    setTimeout(scrollToTarget, 300);
+  } else {
+    // Give mobile menu time to close before scrolling
+    setTimeout(scrollToTarget, 300);
+  }
+};
 
   return (
     <>
@@ -98,10 +96,10 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="navbar"
       >
-        <div className="container">
+        {/* ── Main navbar row ── */}
+        <div className="navbar-inner">
           <div className="navbar-content">
             
-            {/* Logo Workspace Box Container */}
             <motion.div
               whileTap={{ scale: 0.98 }}
               className="navbar-logo-container"
@@ -118,7 +116,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
               </div>
             </motion.div>
 
-            {/* Desktop-Only Anchored Layout Section Links */}
             <div className="navbar-links">
               <a href="#shop" className="navbar-link" onClick={(e) => handleNavigation(e, 'shop')}>
                 {t('Shop', 'المتجر')}
@@ -128,7 +125,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
               </a>
             </div>
 
-            {/* Universal System Operations Panel View Actions */}
             <div className="navbar-actions">
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -148,7 +144,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                 {isSearchOpen ? <X className="icon" /> : <Search className="icon" />}
               </motion.button>
               
-              {/* Account Authorization Menu Node Setup */}
               <div className="user-profile-relative-wrapper" ref={dropdownRef}>
                 <motion.button
                   whileTap={{ scale: 0.85 }}
@@ -172,24 +167,20 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                         <p className="user-display-email">{user?.user_metadata?.full_name || user?.email}</p>
                       </div>
                       <hr className="dropdown-divider" />
-                      
                       <button onClick={() => navigate('/account')} className="dropdown-item">
                         <Package size={16} />
                         <span>{t('My Orders', 'طلباتي')}</span>
                       </button>
-
                       <button onClick={() => navigate('/account')} className="dropdown-item">
                         <Heart size={16} />
                         <span>{t('Favorites', 'قائمة المفضلة')}</span>
                       </button>
-
                       {isAdmin && (
                         <button onClick={() => navigate('/admin')} className="dropdown-item admin-link-item">
                           <ShieldAlert size={16} />
                           <span>{t('Admin Panel', 'لوحة التحكم')}</span>
                         </button>
                       )}
-
                       <hr className="dropdown-divider" />
                       <button onClick={handleSignOut} className="dropdown-item logout-item">
                         <LogOut size={16} />
@@ -200,7 +191,6 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
                 </AnimatePresence>
               </div>
               
-              {/* Basket Tracking Operation Icon Button */}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setIsCartOpen(true)}
@@ -221,7 +211,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
           </div>
         </div>
 
-        {/* ── Sticked Mobile Search Strip (Always visible outside icon drawer on mobile layout) ── */}
+        {/* ── Mobile search strip ── */}
         <div className="mobile-sticky-search-bar">
           <div className="mobile-search-strip-inner">
             <Search className="mobile-strip-search-icon" size={16} />
@@ -240,7 +230,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
           </div>
         </div>
 
-        {/* Desktop Header Global Slide-Down Expanded Search Area Drawer Section Panel */}
+        {/* ── Desktop search drawer ── */}
         <AnimatePresence>
           {isSearchOpen && (
             <motion.div
@@ -249,7 +239,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
               exit={{ height: 0, opacity: 0 }}
               className="navbar-search-drawer"
             >
-              <div className="container search-drawer-inner">
+              <div className="search-drawer-inner">
                 <div className="search-input-wrapper">
                   <Search className="search-input-icon" />
                   <input
@@ -271,7 +261,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
           )}
         </AnimatePresence>
 
-        {/* Responsive Mobile Drawer Container Layout Dropdown Panel Overlay */}
+        {/* ── Mobile menu drawer ── */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div

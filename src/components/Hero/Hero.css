@@ -15,6 +15,7 @@
 }
 
 .hero-img-frame {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
@@ -22,6 +23,8 @@
 }
 
 .hero-bg-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -54,7 +57,6 @@ html[dir="rtl"] .hero-badge {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-
 }
 
 .hero-eyebrow {
@@ -123,13 +125,8 @@ html[dir="rtl"] .hero-badge {
   transition: transform 0.2s ease;
 }
 
-.hero-cta:hover .icon {
-  transform: translateX(3px);
-}
-
-html[dir="rtl"] .hero-cta:hover .icon {
-  transform: translateX(-3px);
-}
+.hero-cta:hover .icon { transform: translateX(3px); }
+html[dir="rtl"] .hero-cta:hover .icon { transform: translateX(-3px); }
 
 .hero-cta-outline {
   background: transparent;
@@ -148,47 +145,55 @@ html[dir="rtl"] .hero-cta:hover .icon {
   border-color: var(--primary-400, #b8895a);
 }
 
-/* ── Responsive ── */
+/* ── Desktop / Laptop ── */
 @media (min-width: 651px) {
   .hero {
-    max-width: 1300px;
+    max-width: 1230px;
+    width: calc(100% - 4rem);
+    margin: 1rem auto 0.5rem;
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
+    min-height: 380px;
   }
 
   .hero-image-wrapper {
     order: 2;
+    height: 100%;
   }
 
   .hero-img-frame {
     aspect-ratio: unset;
     height: 100%;
-    min-height: 260px;
-    border-radius: 0;
+    min-height: 380px;
   }
 
   .hero-body {
     order: 1;
-    padding: 2rem 2rem;
+    padding: 2.5rem 2.5rem;
     justify-content: center;
   }
 
   .hero-title {
-    font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    max-width: 420px;
   }
 }
-.hero-img-frame {
-  position: relative;
-  width: 100%;
-  height: 420px; /* adjust to match your current hero image height */
-}
 
-.hero-bg-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: inherit;
+/* ── Large screens ── */
+@media (min-width: 1024px) {
+  .hero {
+    max-width: 1230px;
+    width: calc(100% - 4rem);
+    margin: 1rem auto 0.5rem;
+    min-height: 420px;
+  }
+
+  .hero-img-frame {
+    min-height: 420px;
+  }
 }
