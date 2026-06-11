@@ -275,3 +275,37 @@ html[dir="rtl"] .cart-drawer-panel {
   background: #cbd5e1;
   border-radius: 3px;
 }
+/* Confirmation email checkbox row */
+.confirmation-check-row {
+  margin-top: -0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.confirmation-check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--primary-700, #66432e);
+  font-weight: 500;
+}
+
+.confirmation-check-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary-700);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Color chip in cart row */
+.cart-color-chip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  margin-inline-end: 4px;
+  vertical-align: middle;
+}

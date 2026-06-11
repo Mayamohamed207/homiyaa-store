@@ -10,15 +10,20 @@ const Hero = () => {
   const { t, isRtl } = useLanguage();
   const navigate = useNavigate();
 
-  const [newArrivals, setNewArrivals] = useState<{ image_url: string; name_en: string; name_ar: string }[]>([]);
+  const [newArrivals, setNewArrivals] = useState<{
+    id: number;
+    image_url: string;
+    name_en: string;
+    name_ar: string;
+  }[]>([]);
   const [slideIndex, setSlideIndex] = useState(0);
   const touchStartXRef = useRef(0);
+  const touchMovedRef = useRef(false);
 
-  // Fetch new arrival products
   useEffect(() => {
     supabase
       .from('products')
-      .select('name_en, name_ar, product_images(image_url)')
+      .select('id, name_en, name_ar, product_images(image_url)')
       .eq('is_new_arrival', true)
       .order('id', { ascending: false })
       .then(({ data }) => {
@@ -26,6 +31,7 @@ const Hero = () => {
           const slides = data
             .filter((p: any) => p.product_images?.[0]?.image_url)
             .map((p: any) => ({
+              id: p.id,
               image_url: p.product_images[0].image_url,
               name_en: p.name_en,
               name_ar: p.name_ar,
@@ -35,7 +41,6 @@ const Hero = () => {
       });
   }, []);
 
-  // Auto-rotate every 3 seconds
   useEffect(() => {
     if (newArrivals.length < 2) return;
     const timer = setInterval(() => {
@@ -46,14 +51,23 @@ const Hero = () => {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
+    touchMovedRef.current = false;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartXRef.current;
     if (Math.abs(dx) > 40) {
+      touchMovedRef.current = true;
       if (dx < 0) setSlideIndex(i => (i + 1) % newArrivals.length);
       else setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length);
     }
+  };
+
+  const handleImageClick = () => {
+    // Don't navigate if the user was swiping
+    if (touchMovedRef.current) return;
+    const current = newArrivals[slideIndex];
+    if (current) navigate(`/product/${current.id}`);
   };
 
   const handleSalesClick = () => {
@@ -78,9 +92,10 @@ const Hero = () => {
 
         <div
           className="hero-img-frame"
-          style={{ position: 'relative', overflow: 'hidden' }}
+          style={{ position: 'relative', overflow: 'hidden', cursor: currentSlide ? 'pointer' : 'default' }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onClick={handleImageClick}
         >
           <AnimatePresence mode="wait">
             {currentSlide ? (
@@ -94,6 +109,7 @@ const Hero = () => {
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.6 }}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                draggable={false}
               />
             ) : (
               <motion.img
@@ -108,16 +124,35 @@ const Hero = () => {
             )}
           </AnimatePresence>
 
+          {/* Product name overlay at bottom */}
+          {currentSlide && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 100%)',
+              padding: '1.5rem 0.75rem 2.5rem',
+              zIndex: 2,
+              pointerEvents: 'none',
+            }}>
+              <p style={{
+                color: '#fff', fontSize: '0.78rem', fontWeight: 700,
+                margin: 0, letterSpacing: '0.03em',
+                textShadow: '0 1px 4px rgba(0,0,0,0.4)',
+              }}>
+                {isRtl ? currentSlide.name_ar : currentSlide.name_en}
+              </p>
+            </div>
+          )}
+
           {/* Dot indicators */}
           {newArrivals.length > 1 && (
             <div style={{
               position: 'absolute', bottom: '12px', left: '50%',
-              transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 2
+              transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 3,
             }}>
               {newArrivals.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setSlideIndex(i)}
+                  onClick={e => { e.stopPropagation(); setSlideIndex(i); }}
                   style={{
                     width: i === slideIndex ? '20px' : '8px',
                     height: '8px',
@@ -133,18 +168,18 @@ const Hero = () => {
             </div>
           )}
 
-          {/* Arrow buttons — desktop only via CSS */}
+          {/* Arrow buttons */}
           {newArrivals.length > 1 && (
             <>
               <button
                 className="hero-arrow hero-arrow-left"
-                onClick={() => setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length)}
+                onClick={e => { e.stopPropagation(); setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length); }}
               >
                 ‹
               </button>
               <button
                 className="hero-arrow hero-arrow-right"
-                onClick={() => setSlideIndex(i => (i + 1) % newArrivals.length)}
+                onClick={e => { e.stopPropagation(); setSlideIndex(i => (i + 1) % newArrivals.length); }}
               >
                 ›
               </button>
@@ -161,7 +196,10 @@ const Hero = () => {
           transition={{ duration: 0.4 }}
           className="hero-title"
         >
-          {isRtl ? (<>بيتك<br /><em>على ذوقك.</em></>) : (<>Make home<br /><em>feel like you.</em></>)}
+          {isRtl
+            ? (<>بيتك<br /><em>على ذوقك.</em></>)
+            : (<>Make home<br /><em>feel like you.</em></>)
+          }
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 6 }}

@@ -29,9 +29,19 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [sendConfirmation, setSendConfirmation] = useState(true);
 
   const [shippingOptions, setShippingOptions] = useState<DbShippingRecord[]>([]);
   const [selectedGovKey, setSelectedGovKey] = useState('');
+
+  // Pre-fill from logged-in user
+  useEffect(() => {
+    if (isOpen && user) {
+      setEmail(user.email ?? '');
+      setName(user.user_metadata?.full_name ?? '');
+      setPhone(user.user_metadata?.phone ?? '');
+    }
+  }, [isOpen, user]);
 
   useEffect(() => {
     if (isOpen) {
@@ -51,20 +61,20 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const activeGovRecord = shippingOptions.find(o => o.key_code === selectedGovKey);
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = cart.length > 0 && activeGovRecord ? Number(activeGovRecord.cost) : 0;
   const grandTotal = subtotal + shippingCost;
 
   const buildOrderDetailsHtml = () => {
     const rows = cart.map(item => `
       <tr>
-        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #333;">
+        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#333;">
           ${item.name_en} / ${item.name_ar}
         </td>
-        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; text-align: center; color: #555;">
+        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;">
           x${item.quantity}
         </td>
-        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 600; color: #111; white-space: nowrap;">
+        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#111;white-space:nowrap;">
           ${item.price * item.quantity} EGP
         </td>
       </tr>
@@ -72,10 +82,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
     return `
       <thead>
-        <tr style="background: #fafafa;">
-          <th style="padding: 8px 0; text-align: left; font-size: 12px; color: #999; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #eee;">Product</th>
-          <th style="padding: 8px 0; text-align: center; font-size: 12px; color: #999; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #eee;">Qty</th>
-          <th style="padding: 8px 0; text-align: right; font-size: 12px; color: #999; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #eee;">Price</th>
+        <tr style="background:#fafafa;">
+          <th style="padding:8px 0;text-align:left;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;border-bottom:2px solid #eee;">Product</th>
+          <th style="padding:8px 0;text-align:center;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;border-bottom:2px solid #eee;">Qty</th>
+          <th style="padding:8px 0;text-align:right;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;border-bottom:2px solid #eee;">Price</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -103,13 +113,23 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || loading || !activeGovRecord) return;
+
+    // If email entered and send confirmation checked, validate email format
+    if (email.trim() && sendConfirmation) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        toast.error(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
+        return;
+      }
+    }
+
     setLoading(true);
 
     const govName = language === 'ar' ? activeGovRecord.name_ar : activeGovRecord.name_en;
 
     const orderPayload = {
       customer_name: name,
-      customer_email: email,
+      customer_email: email.trim() || null,
       customer_phone: phone,
       governorate: govName,
       detailed_address: address,
@@ -133,19 +153,24 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       if (error) throw error;
 
       const orderId = String(data?.[0]?.id || 'N/A');
-      await sendConfirmationEmail(orderId);
+
+      // Only send email if email was entered AND user opted in
+      if (email.trim() && sendConfirmation) {
+        await sendConfirmationEmail(orderId);
+      }
 
       clearCart();
       setName('');
       setEmail('');
       setPhone('');
       setAddress('');
+      setSendConfirmation(true);
       onClose();
 
       toast.success(
         language === 'ar'
-          ? 'تم تسجيل طلبك بنجاح! تحقق من بريدك الإلكتروني'
-          : 'Order placed! Check your email for details'
+          ? 'تم تسجيل طلبك بنجاح!'
+          : 'Order placed successfully!'
       );
     } catch (err: any) {
       toast.error(
@@ -168,7 +193,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
         dir={language === 'ar' ? 'rtl' : 'ltr'}
       >
         <div className="cart-drawer-header">
-          <h3>{language === 'ar' ? 'حقيبة المشتريات' : 'Shopping Cart Bag'}</h3>
+          <h3>{language === 'ar' ? 'حقيبة المشتريات' : 'Shopping Cart'}</h3>
           <button className="close-panel-btn" onClick={onClose}><X size={20} /></button>
         </div>
 
@@ -179,9 +204,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
           </div>
         ) : (
           <div className="cart-drawer-content">
+
+            {/* Cart items */}
             <div className="cart-items-wrapper-list">
               {cart.map(item => (
-                <div key={item.id} className="cart-item-row">
+                <div key={`${item.id}-${item.selected_color?.color_code ?? 'none'}`} className="cart-item-row">
                   <img
                     src={item.image || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80'}
                     alt={item.name_en}
@@ -189,6 +216,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   />
                   <div className="cart-details-info">
                     <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
+                    {item.selected_color && (
+                      <span className="cart-color-chip" style={{ backgroundColor: item.selected_color.color_code }}>
+                        &nbsp;
+                      </span>
+                    )}
                     <span className="cart-price-tag">{item.price} EGP</span>
                     <div className="cart-counter-controls">
                       <button type="button" onClick={() => updateQuantity(item.id, -1, item.selected_color ?? undefined)}>-</button>
@@ -207,31 +239,69 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               ))}
             </div>
 
+            {/* Checkout form */}
             <form onSubmit={handleCheckoutSubmit} className="checkout-shipping-form">
-              <h3>{language === 'ar' ? 'تفاصيل المشتري وشحن الطلب' : 'Customer & Shipping Details'}</h3>
+              <h3>{language === 'ar' ? 'تفاصيل الطلب والشحن' : 'Order & Shipping Details'}</h3>
 
+              {/* Name */}
               <div className="input-group">
                 <input
-                  type="text" required value={name}
+                  type="text"
+                  required
+                  value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder={language === 'ar' ? 'الاسم الكامل' : 'Full Name'}
-                />
-              </div>
-              <div className="input-group">
-                <input
-                  type="email" required value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder={language === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}
-                />
-              </div>
-              <div className="input-group">
-                <input
-                  type="tel" required value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder={language === 'ar' ? 'رقم الهاتف' : 'Phone Number'}
+                  placeholder={language === 'ar' ? 'الاسم الكامل *' : 'Full Name *'}
                 />
               </div>
 
+              {/* Phone */}
+              <div className="input-group">
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder={language === 'ar' ? 'رقم الهاتف *' : 'Phone Number *'}
+                />
+              </div>
+
+              {/* Email — optional */}
+              <div className="input-group">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    if (!e.target.value.trim()) setSendConfirmation(false);
+                    else setSendConfirmation(true);
+                  }}
+                  placeholder={
+                    language === 'ar'
+                      ? 'البريد الإلكتروني (اختياري)'
+                      : 'Email Address (optional)'
+                  }
+                />
+              </div>
+
+              {/* Confirmation checkbox — only show if email entered */}
+              {email.trim() && (
+                <div className="input-group confirmation-check-row">
+                  <label className="confirmation-check-label">
+                    <input
+                      type="checkbox"
+                      checked={sendConfirmation}
+                      onChange={e => setSendConfirmation(e.target.checked)}
+                    />
+                    <span>
+                      {language === 'ar'
+                        ? 'أرسل لي تأكيداً على بريدي الإلكتروني'
+                        : 'Send me an order confirmation email'}
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Governorate */}
               <div className="input-group select-wrapper">
                 <label className="select-caption">
                   {language === 'ar' ? 'اختر المحافظة' : 'Select Governorate'}
@@ -249,14 +319,18 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 </select>
               </div>
 
+              {/* Address */}
               <div className="input-group">
                 <input
-                  type="text" required value={address}
+                  type="text"
+                  required
+                  value={address}
                   onChange={e => setAddress(e.target.value)}
-                  placeholder={language === 'ar' ? 'العنوان بالتفصيل' : 'Detailed Address'}
+                  placeholder={language === 'ar' ? 'العنوان بالتفصيل *' : 'Detailed Address *'}
                 />
               </div>
 
+              {/* Summary */}
               <div className="checkout-summary-financial-card">
                 <div className="financial-row">
                   <span>{language === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
@@ -283,6 +357,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 )}
               </button>
             </form>
+
           </div>
         )}
       </div>
