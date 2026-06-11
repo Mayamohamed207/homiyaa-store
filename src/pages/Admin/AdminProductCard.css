@@ -72,8 +72,9 @@ html[dir="rtl"] .admin-badges {
 }
 
 .badge.new {
-  background: #0ea5e9;
-  color: #fff;
+  background: var(--primary-300);
+  color: var(--black);
+  font-weight: 1100;
 }
 
 /* ── Body row: info left, flags right ── */
