@@ -46,6 +46,11 @@
   z-index: 2;
 }
 
+html[dir="rtl"] .admin-badges {
+  left: auto;
+  right: 0.75rem;
+}
+
 .admin-badges .badge {
   padding: 0.35rem 0.75rem;
   border-radius: var(--radius-sm);
@@ -66,19 +71,28 @@
   color: var(--white);
 }
 
-/* Embedded Content Metadata Styles */
-.admin-card-content {
-  padding: 1.25rem;
-  flex-grow: 1;
+.badge.new {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+/* ── Body row: info left, flags right ── */
+.admin-card-body-row {
   display: flex;
   flex-direction: column;
+  flex: 1;
+}
+
+/* Main content block */
+.admin-card-content {
+  padding: 0.85rem 0.85rem 0 0.85rem;
 }
 
 .admin-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .admin-cat {
@@ -106,7 +120,7 @@
 }
 
 .admin-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--primary-900);
   margin: 0;
@@ -114,51 +128,95 @@
 }
 
 .admin-title-ar {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--primary-700);
-  margin: 0.25rem 0 1rem 0;
+  margin: 0.2rem 0 0.6rem 0;
   direction: rtl;
+}
+
+/* ── Price row + flags on same line ── */
+.admin-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.85rem 0.75rem 0.85rem;
+  gap: 0.5rem;
 }
 
 .admin-price-row {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.5rem;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 .admin-price {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--primary-900);
 }
 
 .admin-discount {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--primary-500);
   text-decoration: line-through;
   font-weight: 600;
 }
 
-/* Control Interfaces footer actions */
+/* ── Flag checkboxes panel ── */
+.admin-flag-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.flag-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.flag-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary-700);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.flag-check span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--primary-700);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.flag-check input:disabled + span {
+  opacity: 0.5;
+}
+
+/* ── 3-button action bar ── */
 .admin-card-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   border-top: 1px solid var(--primary-100);
   background: var(--primary-50);
 }
 
 .admin-card-actions button {
   border: none;
-  padding: 0.85rem;
+  padding: 0.8rem 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: transparent;
   transition: all 0.2s;
 }
@@ -167,25 +225,29 @@
   color: var(--primary-800);
   border-right: 1px solid var(--primary-100);
 }
+.edit-btn:hover { background: var(--primary-100); }
 
-.edit-btn:hover {
-  background: var(--primary-100);
+.visibility-btn {
+  color: #059669;
+  border-right: 1px solid var(--primary-100);
 }
+.visibility-btn:hover { background: #d1fae5; }
+.visibility-btn.is-hidden { color: #475569; }
+.visibility-btn.is-hidden:hover { background: #e2e8f0; }
+
+.delete-btn { color: #ef4444; }
+.delete-btn:hover { background: #fee2e2; }
 
 html[dir="rtl"] .edit-btn {
   border-right: none;
   border-left: 1px solid var(--primary-100);
 }
-
-.delete-btn {
-  color: #ef4444;
+html[dir="rtl"] .visibility-btn {
+  border-right: none;
+  border-left: 1px solid var(--primary-100);
 }
 
-.delete-btn:hover {
-  background: #fee2e2;
-}
-
-/* Slide Indicator Overlays */
+/* ── Image dots ── */
 .card-image-dots {
   position: absolute;
   bottom: 0.75rem;

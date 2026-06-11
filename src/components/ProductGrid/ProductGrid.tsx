@@ -17,7 +17,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { language } = useLanguage();
   const { addToCart } = useCart();
   const { user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<(Product & { is_hidden?: boolean })[]>([]);
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -82,6 +82,8 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const uniqueCategories = useMemo(() => {
     const categoriesMap = new Map<string, string>();
     products.forEach(p => {
+      // Exclude hidden products from building category filters if needed
+      if (p.is_hidden) return;
       if (p.category_en && p.category_ar)
         categoriesMap.set(
           p.category_en.trim(),
@@ -95,7 +97,11 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   }, [products, language]);
 
   const processedProducts = useMemo(() => {
-    let result = products.filter(item => {
+    // 1. Filter out completely hidden items from public storefront views
+    let result = products.filter(item => !item.is_hidden);
+
+    // 2. Perform search matches
+    result = result.filter(item => {
       const matchesEn =
         item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category_en.toLowerCase().includes(searchQuery.toLowerCase());
@@ -109,16 +115,23 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     } else if (selectedCategory === '__new_arrivals__') {
       result = result.filter(item => item.is_new_arrival === true);
     } else if (selectedCategory === '__sales__') {
-    result = result.filter(item => item.discount_price !== null && item.discount_price > 0);
+      result = result.filter(item => item.discount_price !== null && item.discount_price > 0);
     } else if (selectedCategory !== 'all') {
       result = result.filter(
         item => item.category_en.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
 
+    // 3. Sort logic handling standard filters first and forcing ALL Sold Out to the ultimate bottom
     result.sort((a, b) => {
+      // Rule A: Force Sold Out items to the bottom unconditionally
+      if (a.is_sold_out && !b.is_sold_out) return 1;
+      if (!a.is_sold_out && b.is_sold_out) return -1;
+
+      // Both items have the same status (both in stock or both sold out), apply normal sort choices:
       const priceA = a.discount_price ?? a.price;
       const priceB = b.discount_price ?? b.price;
+      
       if (sortBy === 'popular') {
         if (a.is_popular && !b.is_popular) return -1;
         if (!a.is_popular && b.is_popular) return 1;
