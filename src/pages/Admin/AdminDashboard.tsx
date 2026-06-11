@@ -48,7 +48,7 @@ type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
 type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com','mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
 
 const initialFormState: ProductFormState = {
   name_en: '', name_ar: '', description_en: '', description_ar: '',

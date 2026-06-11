@@ -30,7 +30,7 @@ const Navbar = ({ searchQuery, setSearchQuery, onOpenAuth }: NavbarProps) => {
 
   const isRtl = language === 'ar';
 
-  const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+  const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com','mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
   const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
 
   const toggleSearch = () => {

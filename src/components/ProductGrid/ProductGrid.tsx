@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
-import { ArrowUpDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import ProductCard, { Product, ProductColor } from '../ProductCard/ProductCard';
@@ -21,7 +21,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('latest');
+  const [sortBy, setSortBy] = useState<SortOption>('popular');
 
   useEffect(() => {
     if (!user) { setWishlistIds(new Set()); return; }
@@ -58,8 +58,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
   const handleCategorySelect = (value: string) => {
     setSelectedCategory(value);
-    const event = new CustomEvent('storeCategoryChanged', { detail: value });
-    window.dispatchEvent(event);
+    window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
   };
 
   const handleAddToCartMapping = (item: Product, chosenColor: ProductColor) => {
@@ -82,7 +81,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const uniqueCategories = useMemo(() => {
     const categoriesMap = new Map<string, string>();
     products.forEach(p => {
-      // Exclude hidden products from building category filters if needed
       if (p.is_hidden) return;
       if (p.category_en && p.category_ar)
         categoriesMap.set(
@@ -97,10 +95,8 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   }, [products, language]);
 
   const processedProducts = useMemo(() => {
-    // 1. Filter out completely hidden items from public storefront views
     let result = products.filter(item => !item.is_hidden);
 
-    // 2. Perform search matches
     result = result.filter(item => {
       const matchesEn =
         item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,7 +106,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       return matchesEn || matchesAr;
     });
 
-   if (selectedCategory === '__wishlist__') {
+    if (selectedCategory === '__wishlist__') {
       result = result.filter(item => wishlistIds.has(item.id));
     } else if (selectedCategory === '__new_arrivals__') {
       result = result.filter(item => item.is_new_arrival === true);
@@ -122,16 +118,11 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       );
     }
 
-    // 3. Sort logic handling standard filters first and forcing ALL Sold Out to the ultimate bottom
     result.sort((a, b) => {
-      // Rule A: Force Sold Out items to the bottom unconditionally
       if (a.is_sold_out && !b.is_sold_out) return 1;
       if (!a.is_sold_out && b.is_sold_out) return -1;
-
-      // Both items have the same status (both in stock or both sold out), apply normal sort choices:
       const priceA = a.discount_price ?? a.price;
       const priceB = b.discount_price ?? b.price;
-      
       if (sortBy === 'popular') {
         if (a.is_popular && !b.is_popular) return -1;
         if (!a.is_popular && b.is_popular) return 1;
@@ -146,17 +137,17 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   }, [products, searchQuery, selectedCategory, sortBy, wishlistIds]);
 
   const sortLabel = {
-    latest:      language === 'ar' ? 'الأحدث'         : 'Latest',
-    popular:     language === 'ar' ? 'الأكثر مبيعاً'   : 'Best Selling',
-    'price-asc': language === 'ar' ? 'السعر: الأقل'   : 'Price ↑',
-    'price-desc': language === 'ar' ? 'السعر: الأعلى'  : 'Price ↓',
+    popular:      language === 'ar' ? 'الأكثر مبيعاً'  : 'Best Selling',
+    latest:       language === 'ar' ? 'الأحدث'        : 'Latest',
+    'price-asc':  language === 'ar' ? 'السعر: الأقل'  : 'Price ↑',
+    'price-desc': language === 'ar' ? 'السعر: الأعلى' : 'Price ↓',
   }[sortBy];
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner-ring" />
-        <p>{language === 'ar' ? 'جاري تحميل المنتجات الفاخرة...' : 'Loading premium collection...'}</p>
+        <p>{language === 'ar' ? 'جاري تحميل المنتجات...' : 'Loading collection...'}</p>
       </div>
     );
   }
@@ -165,22 +156,15 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     <section id="shop" className="product-grid-section">
       <div className="container">
 
-        {/* Categories Title Header */}
-        <div className="section-header" style={{ marginBottom: '1rem', borderBottom: 'none', paddingBottom: 0 }}>
-          <div className="section-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className="section-title">
-              {language === 'ar' ? 'الأقسام' : 'Categories'}
-            </span>
-            {language === 'ar' ? (
-              <ChevronLeft size={18} className="title-arrow-icon" style={{ color: 'var(--primary-500)' }} />
-            ) : (
-              <ChevronRight size={18} className="title-arrow-icon" style={{ color: 'var(--primary-500)' }} />
-            )}
-          </div>
+        {/* Categories header — arrow flush with text */}
+        <div className="section-header" style={{ marginBottom: '0.75rem' }}>
+          <h2 className="section-title">
+            {language === 'ar' ? 'الأقسام' : 'Categories'}
+          </h2>
         </div>
 
         {/* Category pills */}
-        <div className="category-pills-row" style={{ marginBottom: '2.5rem' }}>
+        <div className="category-pills-row">
           <button
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => handleCategorySelect('all')}
@@ -222,15 +206,16 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           ))}
         </div>
 
+        {/* Products header + sort */}
         <div className="section-header">
-          <span className="section-title">
+          <h2 className="section-title">
             {selectedCategory === '__sales__'
               ? (language === 'ar' ? 'العروض الحالية' : 'Active Deals')
               : selectedCategory === '__new_arrivals__'
               ? (language === 'ar' ? 'وصل حديثاً' : 'New Arrivals')
-              : (language === 'ar' ? 'المنتجات المميزة' : 'Popular Picks')
+              : (language === 'ar' ? 'المنتجات' : 'Products')
             }
-          </span>
+          </h2>
           <div className="sort-wrapper">
             <button className="sort-btn">
               <ArrowUpDown size={13} />
@@ -240,22 +225,22 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
               value={sortBy}
               onChange={e => setSortBy(e.target.value as SortOption)}
             >
-              <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest'}</option>
               <option value="popular">{language === 'ar' ? 'الأكثر مبيعاً' : 'Best Selling'}</option>
+              <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest'}</option>
               <option value="price-asc">{language === 'ar' ? 'السعر: الأقل للأعلى' : 'Price: Low to High'}</option>
               <option value="price-desc">{language === 'ar' ? 'السعر: الأعلى للأقل' : 'Price: High to Low'}</option>
             </select>
           </div>
         </div>
 
-        {/* Grid or empty state */}
+        {/* Grid or empty */}
         {processedProducts.length === 0 ? (
           <div className="empty-store-state">
             <h3>{language === 'ar' ? 'لم يتم العثور على نتائج' : 'No products found'}</h3>
             <p>
               {language === 'ar'
                 ? 'جرب تغيير خيارات التصفية أو البحث عن منتجات أخرى.'
-                : 'Try altering your filter metrics or look up another term.'}
+                : 'Try altering your filters or search for something else.'}
             </p>
             {(selectedCategory !== 'all' || searchQuery !== '') && (
               <button

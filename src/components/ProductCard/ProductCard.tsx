@@ -92,45 +92,34 @@ const ProductCard = ({
   };
 
   const name = language === 'ar' ? product.name_ar : product.name_en;
-  
-  // Get initial value based on active language selection
-  let category = language === 'ar' ? product.category_ar : product.category_en;
 
-  // Clean raw database entries that mistakenly contain combined dual-language names (e.g., "MUGS / مجات حرارية")
+  let category = language === 'ar' ? product.category_ar : product.category_en;
   if (category && category.includes(' / ')) {
     const parts = category.split(' / ');
     category = language === 'ar' ? parts[1] : parts[0];
   }
 
   const images = product.product_images || [];
-  const currentImageUrl = images.length > 0 && images[activeImgIndex] ? images[activeImgIndex].image_url : FALLBACK_IMAGE;
+  const currentImageUrl = images.length > 0 && images[activeImgIndex]
+    ? images[activeImgIndex].image_url
+    : FALLBACK_IMAGE;
   const colors = product.product_colors || [];
 
   const handleCardRedirection = () => {
-    if (!isAdminMode) {
-      navigate(`/product/${product.id}`);
-    }
+    if (!isAdminMode) navigate(`/product/${product.id}`);
   };
 
   const handleCartClick = () => {
     if (product.is_sold_out || !onAddToCart) return;
     if (colors.length > 0 && chosenColorIndex === null) {
-      toast.error(
-        language === 'ar'
-          ? '⚠️ يرجى اختيار لون أولاً!'
-          : '⚠️ Please select a color!'
-      );
+      toast.error(language === 'ar' ? '⚠️ يرجى اختيار لون أولاً!' : '⚠️ Please select a color!');
       return;
     }
     const assignedColor = colors.length > 0
       ? colors[chosenColorIndex!]
       : { color_code: '#000000', color_name_en: 'Default', color_name_ar: 'افتراضي' };
-    
     onAddToCart(product, assignedColor);
-    
-    toast.success(
-      language === 'ar' ? 'تمت الإضافة إلى السلة بنجاح' : 'Added to cart successfully'
-    );
+    toast.success(language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -143,11 +132,8 @@ const ProductCard = ({
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     if (Math.abs(dx) > 40 && dy < 60) {
-      if (dx < 0) {
-        setActiveImgIndex(i => (i + 1) % images.length);
-      } else {
-        setActiveImgIndex(i => (i - 1 + images.length) % images.length);
-      }
+      if (dx < 0) setActiveImgIndex(i => (i + 1) % images.length);
+      else setActiveImgIndex(i => (i - 1 + images.length) % images.length);
     }
   };
 
@@ -182,8 +168,7 @@ const ProductCard = ({
             onClick={handleWishlistToggle}
           >
             <Heart
-              className="icon"
-              size={18}
+              size={16}
               fill={wishlisted ? '#ef4444' : 'none'}
               color={wishlisted ? '#ef4444' : 'currentColor'}
             />
@@ -199,11 +184,7 @@ const ProductCard = ({
                 key={dotIdx}
                 type="button"
                 className={`image-dot ${dotIdx === activeImgIndex ? 'active' : ''}`}
-                onClick={e => {
-                  e.stopPropagation();
-                  setActiveImgIndex(dotIdx);
-                }}
-                title={language === 'ar' ? `عرض الصورة ${dotIdx + 1}` : `View image ${dotIdx + 1}`}
+                onClick={e => { e.stopPropagation(); setActiveImgIndex(dotIdx); }}
               />
             ))}
           </div>
@@ -225,53 +206,62 @@ const ProductCard = ({
                   e.stopPropagation();
                   const newIndex = chosenColorIndex === idx ? null : idx;
                   setChosenColorIndex(newIndex);
-                  if (newIndex !== null && images[newIndex + 1]) {
-                    setActiveImgIndex(newIndex + 1);
-                  } else {
-                    setActiveImgIndex(0);
-                  }
+                  if (newIndex !== null && images[newIndex + 1]) setActiveImgIndex(newIndex + 1);
+                  else setActiveImgIndex(0);
                 }}
               />
             ))}
           </div>
         )}
 
-        <h1 className="product-name line-clamp-2">{name}</h1>
-        <h6 className="product-category line-clamp-1">{category}</h6>
+        <p className="product-name line-clamp-2">{name}</p>
+        <p className="product-category line-clamp-1">{category}</p>
 
+        {/* ── Footer: price stack LEFT, cart button RIGHT ── */}
         <div className="product-footer">
-          <div>
-            {product.discount_price ? (
-              <>
-                <span className="product-price">{product.discount_price} EGP</span>
-                <span className="product-old-price" style={{ textDecoration: 'line-through', opacity: 0.5, fontSize: '0.85em', marginInlineStart: '0.3rem' }}>{product.price} EGP</span>
-              </>
-            ) : (
-              <span className="product-price">{product.price} EGP</span>
-            )}
-          </div>
 
           {isAdminMode ? (
-            <div className="admin-actions-wrapper" onClick={e => e.stopPropagation()}>
-              <button type="button" className="admin-edit-action-btn" onClick={() => onEdit?.(product)} title="Edit configuration">
-                <Edit size={16} />
-              </button>
-              <button type="button" className="admin-delete-action-btn" onClick={() => onDelete?.(product.id)} title="Remove listing">
-                <Trash2 size={16} />
-              </button>
-            </div>
+            <>
+              <div className="product-price-stack">
+                <span className="product-price">
+                  {product.discount_price ? product.discount_price : product.price} EGP
+                </span>
+                {product.discount_price && (
+                  <span className="product-old-price">{product.price} EGP</span>
+                )}
+              </div>
+              <div className="admin-actions-wrapper" onClick={e => e.stopPropagation()}>
+                <button type="button" className="admin-edit-action-btn" onClick={() => onEdit?.(product)}>
+                  <Edit size={15} />
+                </button>
+                <button type="button" className="admin-delete-action-btn" onClick={() => onDelete?.(product.id)}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </>
           ) : (
-            <div onClick={e => e.stopPropagation()}>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={product.is_sold_out}
-                onClick={() => handleCartClick()}
-              >
-                <ShoppingCart className="icon" size={18} />
-              </Button>
-            </div>
+            <>
+              <div className="product-price-stack">
+                <span className="product-price">
+                  {product.discount_price ? product.discount_price : product.price} EGP
+                </span>
+                {product.discount_price && (
+                  <span className="product-old-price">{product.price} EGP</span>
+                )}
+              </div>
+              <div onClick={e => e.stopPropagation()}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={product.is_sold_out}
+                  onClick={handleCartClick}
+                >
+                  <ShoppingCart size={16} />
+                </Button>
+              </div>
+            </>
           )}
+
         </div>
       </div>
     </Card>
