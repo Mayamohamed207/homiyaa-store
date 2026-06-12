@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal } from 'lucide-react';
+import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal, BarChart2 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
@@ -10,6 +10,7 @@ import { Product } from '../../components/ProductCard/ProductCard';
 import { useLanguage } from '../../context/LanguageContext';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import AdminUsagePanel from './AdminUsagePanel';
 import './AdminDashboard.css';
 
 interface ProductFormState {
@@ -45,7 +46,7 @@ interface UnifiedImage {
 }
 
 type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
-type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories';
+type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories' | 'usage';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com','mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
@@ -370,13 +371,23 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           >
             <Layers size={18} /> {t('Categories', 'الأقسام')}
           </button>
+
+          <button
+          onClick={() => setActiveTab('usage')}
+          className="admin-tab-btn"
+          style={{ background: activeTab === 'usage' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'usage' ? 'var(--white)' : 'var(--primary-800)' }}
+        >
+          <BarChart2 size={18} /> {t('Usage', 'الاستخدام')}
+        </button>
         </div>
       )}
 
       {!isFormOpen ? (
         activeTab === 'orders' ? (
           <AdminOrdersPanel orders={orders} setOrders={setOrders} loadingOrders={loadingOrders} onRefresh={fetchOrders} />
-        ) : activeTab === 'shipping' || activeTab === 'categories' ? (
+       ) : activeTab === 'usage' ? (
+        <AdminUsagePanel />
+      ) : activeTab === 'shipping' || activeTab === 'categories' ? (
           <AdminSettingsPanel
             activeTab={activeTab}
             dbLiveCategories={dbLiveCategories}
