@@ -299,7 +299,7 @@ const AccountPage = () => {
                       <div className="order-footer-breakdown">
                         {order.subtotal > 0 && (
                           <div className="order-footer-row">
-                            <span>{t('Subtotal', 'المجموع الفرعي')}</span>
+                            <span>{t('Subtotal', 'سعر المنتج')}</span>
                             <span>{order.subtotal} {t('EGP', 'ج.م')}</span>
                           </div>
                         )}

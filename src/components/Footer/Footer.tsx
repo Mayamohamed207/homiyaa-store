@@ -121,7 +121,7 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
 
         {/* Quick Links Group */}
         <div className="footer-links-group">
-          <h4 className="footer-title">{t('Shop Collections', 'تسوّق مجموعاتنا')}</h4>
+          <h4 className="footer-title">{t('Shop Collections', 'تسوّق منتجاتنا')}</h4>
           <ul className="footer-links-list">
             <li>
               <a 

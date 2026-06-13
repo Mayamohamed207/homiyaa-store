@@ -210,8 +210,8 @@ const Hero = () => {
           className="hero-subtitle"
         >
           {t(
-            'Premium kitchen & home pieces, curated for warmth and beauty.',
-            'أدوات منزلية وأواني مطبخ فاخرة — مصنوعة لدفء حياتك اليومية.'
+            'Premium kitchen & home tool, for warmth and beauty.',
+            'أدوات منزلية لوازم مطبخ راقية — مصنوعة لدفء حياتك اليومية.'
           )}
         </motion.p>
         <motion.div
@@ -221,7 +221,7 @@ const Hero = () => {
           transition={{ duration: 0.3, delay: 0.1 }}
         >
           <button className="hero-cta" onClick={handleSalesClick}>
-            <span>{t('See Our Sales', 'شاهد عروضنا')}</span>
+            <span>{t('See Our Sales', 'عروضنا')}</span>
             <ArrowRight className="icon" style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }} />
           </button>
           <button
@@ -230,7 +230,7 @@ const Hero = () => {
             onClick={() => navigate('/account')}
           >
             <History size={14} />
-            <span>{t('Order History', 'سجل الطلبات')}</span>
+            <span>{t('Order History', 'طلباتك')}</span>
           </button>
         </motion.div>
       </div>

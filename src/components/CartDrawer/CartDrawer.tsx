@@ -346,7 +346,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
               {/* Summary */}
               <div className="checkout-summary-financial-card">
                 <div className="financial-row">
-                  <span>{language === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
+                  <span>{language === 'ar' ? 'سعر المنتج' : 'Subtotal'}</span>
                   <span>{subtotal} EGP</span>
                 </div>
                 <div className="financial-row">
@@ -354,7 +354,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   <span>{shippingCost} EGP</span>
                 </div>
                 <div className="financial-row final-total-row">
-                  <span>{language === 'ar' ? 'الإجمالي الكلي' : 'Grand Total'}</span>
+                  <span>{language === 'ar' ? 'الإجمالي ' : 'Grand Total'}</span>
                   <span>{grandTotal} EGP</span>
                 </div>
               </div>

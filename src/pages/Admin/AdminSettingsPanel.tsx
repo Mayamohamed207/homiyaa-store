@@ -269,7 +269,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
         <form onSubmit={handleCreateCategoryItem} className="settings-form">
           <input type="text" placeholder={t('English Name', 'اسم القسم بالإنجليزي')} required value={newCatEn} onChange={e => setNewCatEn(e.target.value)} className="settings-input" />
           <input type="text" placeholder={t('Arabic Name', 'اسم القسم بالعربي')} required value={newCatAr} onChange={e => setNewCatAr(e.target.value)} className="settings-input" />
-          <button type="submit" className="settings-btn">{t('Create Category', 'إنشاء قسم')}</button>
+          <button type="submit" className="settings-btn">{t('Create Category', 'اضافة قسم')}</button>
         </form>
         
         <div className="categories-grid">
