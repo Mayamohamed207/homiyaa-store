@@ -117,7 +117,7 @@ const ProductCard = ({
     }
     const assignedColor = colors.length > 0
       ? colors[chosenColorIndex!]
-      : { color_code: '#000000', color_name_en: 'Default', color_name_ar: 'افتراضي' };
+      : { color_code: '#000000', color_name_en: 'Default', color_name_ar: '' };
     onAddToCart(product, assignedColor);
     toast.success(language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };

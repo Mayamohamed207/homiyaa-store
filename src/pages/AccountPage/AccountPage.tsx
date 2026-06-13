@@ -13,6 +13,9 @@ interface OrderItem {
   quantity: number;
   price: number;
   image?: string;
+  colorChosen?: string;
+  colorChosenAr?: string;
+  color_code?: string;
 }
 
 interface Order {
@@ -102,23 +105,26 @@ const AccountPage = () => {
           });
         }
 
-        const formattedOrders: Order[] = (ordersData || []).map((order: any) => ({
-          id:               order.id,
-          created_at:       order.created_at,
-          total_amount:     order.total,
-          subtotal:         order.subtotal,
-          shipping_cost:    order.shipping_cost,
-          governorate:      order.governorate,
-          detailed_address: order.detailed_address,
-          status:           order.status,
-          items: (order.items || []).map((item: any) => ({
-            id:            item.id,
-            product_title: isRtl ? item.name_ar : item.name_en,
-            quantity:      item.quantity,
-            price:         item.price,
-            image: item.image || imageMap[Number(item.id)] || FALLBACK_IMAGE,
-          })),
-        }));
+     const formattedOrders: Order[] = (ordersData || []).map((order: any) => ({
+      id:               order.id,
+      created_at:       order.created_at,
+      total_amount:     order.total,
+      subtotal:         order.subtotal,
+      shipping_cost:    order.shipping_cost,
+      governorate:      order.governorate,
+      detailed_address: order.detailed_address,
+      status:           order.status,
+      items: (order.items || []).map((item: any) => ({
+        id:            item.id,
+        product_title: isRtl ? item.name_ar : item.name_en,
+        quantity:      item.quantity,
+        price:         item.price,
+        image:         item.image || imageMap[Number(item.id)] || FALLBACK_IMAGE,
+        colorChosen:   item.colorChosen ?? null,
+        colorChosenAr: item.colorChosenAr ?? null,
+        color_code:    item.color_code ?? null,
+      })),
+    }));
 
         const { data: wishlistData, error: wishlistError } = await supabase
           .from('wishlists')
@@ -260,7 +266,23 @@ const AccountPage = () => {
                             />
                           </div>
                           <div className="order-item-info">
-                            <p className="order-item-name">{item.product_title}</p>
+                           <p className="order-item-name">{item.product_title}</p>
+                            {(item as any).colorChosen && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px' }}>
+                                {(item as any).color_code && (
+                                  <span style={{
+                                    display: 'inline-block',
+                                    width: '10px', height: '10px',
+                                    borderRadius: '50%',
+                                    backgroundColor: (item as any).color_code,
+                                    border: '1px solid rgba(0,0,0,0.15)',
+                                  }} />
+                                )}
+                                <span style={{ fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 500 }}>
+                                  {isRtl ? (item as any).colorChosenAr || (item as any).colorChosen : (item as any).colorChosen}
+                                </span>
+                              </div>
+                            )}
                             <div className="order-item-sub-row">
                               <span className="order-item-qty-badge">×{item.quantity}</span>
                               <span className="order-item-unit-price">{item.price} {t('EGP', 'ج.م')}</span>

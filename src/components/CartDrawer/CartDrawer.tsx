@@ -134,13 +134,16 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       governorate: govName,
       detailed_address: address,
       items: cart.map(i => ({
-        id: i.id,
-        name_en: i.name_en,
-        name_ar: i.name_ar,
-        quantity: i.quantity,
-        price: i.price,
-        image: i.image ?? null,
-      })),
+      id: i.id,
+      name_en: i.name_en,
+      name_ar: i.name_ar,
+      quantity: i.quantity,
+      price: i.price,
+      image: i.image ?? null,
+      colorChosen: i.selected_color?.color_name_en ?? null,
+      colorChosenAr: i.selected_color?.color_name_ar ?? null,
+      color_code: i.selected_color?.color_code ?? null,
+    })),
       subtotal,
       shipping_cost: shippingCost,
       total: grandTotal,
@@ -215,11 +218,21 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     className="cart-thumb"
                   />
                   <div className="cart-details-info">
-                    <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
+                  <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
                     {item.selected_color && (
-                      <span className="cart-color-chip" style={{ backgroundColor: item.selected_color.color_code }}>
-                        &nbsp;
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '2px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          width: '12px', height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: item.selected_color.color_code,
+                          border: '1px solid rgba(0,0,0,0.15)',
+                          flexShrink: 0,
+                        }} />
+                        <span style={{ fontSize: '0.72rem', color: 'var(--primary-600)', fontWeight: 500 }}>
+                          {item.selected_color.color_name_en} / {item.selected_color.color_name_ar}
+                        </span>
+                      </div>
                     )}
                     <span className="cart-price-tag">{item.price} EGP</span>
                     <div className="cart-counter-controls">
