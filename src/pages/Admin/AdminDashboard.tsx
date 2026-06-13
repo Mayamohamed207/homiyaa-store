@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal } from 'lucide-react';
+import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal, BarChart2 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
@@ -10,6 +10,7 @@ import { Product } from '../../components/ProductCard/ProductCard';
 import { useLanguage } from '../../context/LanguageContext';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import AdminUsagePanel from './AdminUsagePanel';
 import './AdminDashboard.css';
 
 interface ProductFormState {
@@ -24,6 +25,7 @@ interface ProductFormState {
   category_ar: string;
   stock_quantity: number | '';
   is_popular: boolean;
+  is_new_arrival?: boolean;
   is_sold_out: boolean;
   product_images?: { image_url: string }[];
   product_colors?: { color_code: string; color_name_en: string; color_name_ar: string }[];
@@ -44,15 +46,15 @@ interface UnifiedImage {
 }
 
 type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
-type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories';
+type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories' | 'usage';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-const ADMIN_EMAILS = ['admin@homiyaa.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com','mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
 
 const initialFormState: ProductFormState = {
   name_en: '', name_ar: '', description_en: '', description_ar: '',
   price: '', discount_price: '', category_en: '', category_ar: '',
-  stock_quantity: '', is_popular: false, is_sold_out: false,
+stock_quantity: '', is_popular: false, is_sold_out: false, is_new_arrival: false,
 };
 
 const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: string }) => {
@@ -280,6 +282,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       stock_quantity: product.stock_quantity,
       is_popular: product.is_popular,
       is_sold_out: product.is_sold_out,
+      is_new_arrival: product.is_new_arrival ?? false,
     });
     setFormImages((product.product_images || []).map((img, index) => ({
       id: `existing-${index}-${Math.random()}`,
@@ -368,13 +371,23 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           >
             <Layers size={18} /> {t('Categories', 'الأقسام')}
           </button>
+
+          <button
+          onClick={() => setActiveTab('usage')}
+          className="admin-tab-btn"
+          style={{ background: activeTab === 'usage' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'usage' ? 'var(--white)' : 'var(--primary-800)' }}
+        >
+          <BarChart2 size={18} /> {t('Usage', 'الاستخدام')}
+        </button>
         </div>
       )}
 
       {!isFormOpen ? (
         activeTab === 'orders' ? (
           <AdminOrdersPanel orders={orders} setOrders={setOrders} loadingOrders={loadingOrders} onRefresh={fetchOrders} />
-        ) : activeTab === 'shipping' || activeTab === 'categories' ? (
+       ) : activeTab === 'usage' ? (
+        <AdminUsagePanel />
+      ) : activeTab === 'shipping' || activeTab === 'categories' ? (
           <AdminSettingsPanel
             activeTab={activeTab}
             dbLiveCategories={dbLiveCategories}
@@ -452,15 +465,15 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             <div className="field">
               <label>Price (EGP)</label>
-              <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input type="number" step="1" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
             <div className="field">
-              <label>Discount Price</label>
-              <input type="number" step="0.01" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <label>Price After Discount</label>
+              <input type="number" step="1" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
             <div className="field full-width">
               <label>Stock Count</label>
-              <input type="number" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input type="number" step="1" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
             </div>
 
             <div className="field full-width">
@@ -513,12 +526,21 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             <div className="checkbox-field">
               <input type="checkbox" id="popular" checked={formData.is_popular} onChange={e => setFormData({ ...formData, is_popular: e.target.checked })} />
-              <label htmlFor="popular">Feature in Popular Trends</label>
+              <label htmlFor="popular">Feature as Best Selling</label>
             </div>
             <div className="checkbox-field">
               <input type="checkbox" id="soldout" checked={formData.is_sold_out} onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })} />
               <label htmlFor="soldout">Out Of Stock</label>
             </div>
+            <div className="checkbox-field">
+            <input
+              type="checkbox"
+              id="new_arrival"
+              checked={formData.is_new_arrival ?? false}
+              onChange={e => setFormData({ ...formData, is_new_arrival: e.target.checked })}
+            />
+            <label htmlFor="new_arrival">New Arrival</label>
+          </div>
           </div>
 
           <div className="form-actions">
