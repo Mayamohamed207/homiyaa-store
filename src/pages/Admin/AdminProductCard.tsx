@@ -122,7 +122,7 @@ const AdminProductCard = ({
         <div className="admin-badges">
           {isPopular && <span className="badge pop">{t('Best Selling', 'الأكثر مبيعًا')}</span>}
           {isSoldOut && <span className="badge sold">{t('Sold Out', 'نفد')}</span>}
-          {isNewArrival && <span className="badge new">{t('New Arrival', 'وصول جديد')}</span>}
+          {isNewArrival && <span className="badge new">{t('New Arrival', 'وصل حديثا')}</span>}
         </div>
 
         {images.length > 1 && (

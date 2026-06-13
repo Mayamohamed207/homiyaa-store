@@ -158,6 +158,11 @@ const ProductCard = ({
             {language === 'ar' ? 'الأكثر مبيعاً' : 'Best Selling'}
           </Badge>
         )}
+        {product.is_new_arrival && !product.is_sold_out && (
+          <Badge variant="primary" className="product-badge new-arrival-badge">
+            {language === 'ar' ? 'وصل حديثاً' : 'New Arrival'}
+          </Badge>
+        )}
 
         {!isAdminMode && (
           <motion.button

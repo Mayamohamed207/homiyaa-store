@@ -23,6 +23,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
 
+  
   useEffect(() => {
     if (!user) { setWishlistIds(new Set()); return; }
     supabase
@@ -38,9 +39,9 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     const loadStoreProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from('products')
-        .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
-        .order('id', { ascending: false });
+      .from('products')
+      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
+      .order('display_order', { ascending: true });
       if (!error && data) setProducts(data);
       setLoading(false);
     };
@@ -126,11 +127,11 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       if (sortBy === 'popular') {
         if (a.is_popular && !b.is_popular) return -1;
         if (!a.is_popular && b.is_popular) return 1;
-        return b.id - a.id;
+        return ((a as any).display_order ?? 0) - ((b as any).display_order ?? 0);
       }
       if (sortBy === 'price-asc') return priceA - priceB;
       if (sortBy === 'price-desc') return priceB - priceA;
-      return b.id - a.id;
+      return ((a as any).display_order ?? 0) - ((b as any).display_order ?? 0);
     });
 
     return result;
@@ -226,7 +227,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
               onChange={e => setSortBy(e.target.value as SortOption)}
             >
               <option value="popular">{language === 'ar' ? 'الأكثر مبيعاً' : 'Best Selling'}</option>
-              <option value="latest">{language === 'ar' ? 'المضاف حديثاً' : 'Latest'}</option>
               <option value="price-asc">{language === 'ar' ? 'السعر: الأقل للأعلى' : 'Price: Low to High'}</option>
               <option value="price-desc">{language === 'ar' ? 'السعر: الأعلى للأقل' : 'Price: High to Low'}</option>
             </select>

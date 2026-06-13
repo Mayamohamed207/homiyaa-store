@@ -94,10 +94,11 @@ const handleDeleteOrder = (orderId: number) => {
 
   const translateStatus = (status: string) => {
     switch (status) {
-      case 'Pending': return t('Pending', 'قيد الانتظار');
+      case 'Pending': return t('Pending', ' انتظار التأكيد');
       case 'Confirmed': return t('Confirmed', 'تم التأكيد');
       case 'Shipped': return t('Shipped', 'تم الشحن');
-      case 'Completed': return t('Completed', 'مكتمل');
+      case 'Completed': return t('Completed', 'تم التوصيل');
+      case 'Cancelled': return t('Cancelled', 'ملغي');
       default: return status;
     }
   };
@@ -106,8 +107,8 @@ const handleDeleteOrder = (orderId: number) => {
     <div className="orders-panel">
       <div className="orders-panel-header">
         <div className="orders-panel-title">
-          <h2>{t('View Your Orders', 'عرض طلبات العملاء')}</h2>
-          <p>{t('Click a status badge to move its status', 'اضغط على شارة الحالة لتغيير مرحلة الطلب مباشرة')}</p>
+          <h2>{t('View Your Orders', 'طلبات العملاء')}</h2>
+          <p>{t('Click status badge to move its status', 'اضغط على شارة الحالة لتغيير مرحلة الطلب')}</p>
         </div>
         <button onClick={onRefresh} className="refresh-logs-btn" title={t('Refresh logs', 'تحديث السجلات')}>
           <RefreshCw size={20} style={{ animation: loadingOrders ? 'spin 1s linear infinite' : 'none' }} />

@@ -42,10 +42,10 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812db
 
 const useTranslateStatus = (t: Function) => (status: string) => {
   switch (status) {
-    case 'Pending':   return t('Pending',   'قيد الانتظار');
+    case 'Pending':   return t('Pending',   ' انتظار التأكيد');
     case 'Confirmed': return t('Confirmed', 'تم التأكيد');
     case 'Shipped':   return t('Shipped',   'تم الشحن');
-    case 'Completed': return t('Completed', 'مكتمل');
+    case 'Completed': return t('Completed', 'تم التوصيل');
     case 'Cancelled': return t('Cancelled', 'ملغي');
     default: return status;
   }

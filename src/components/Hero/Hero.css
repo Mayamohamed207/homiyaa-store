@@ -171,8 +171,8 @@ html[dir="rtl"] .hero-cta:hover .icon { transform: translateX(-3px); }
   background: rgba(255, 255, 255, 1);
 }
 
-.hero-arrow-left  { left: 12px; }
-.hero-arrow-right { right: 12px; }
+.hero-arrow-left  { left: 12px !important; right: auto !important; }
+.hero-arrow-right { right: 12px !important; left: auto !important; }
 
 /* ── Desktop / Laptop ── */
 @media (min-width: 651px) {

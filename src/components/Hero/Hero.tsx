@@ -171,18 +171,20 @@ const Hero = () => {
           {/* Arrow buttons */}
           {newArrivals.length > 1 && (
             <>
-              <button
-                className="hero-arrow hero-arrow-left"
-                onClick={e => { e.stopPropagation(); setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length); }}
-              >
-                ‹
-              </button>
-              <button
-                className="hero-arrow hero-arrow-right"
-                onClick={e => { e.stopPropagation(); setSlideIndex(i => (i + 1) % newArrivals.length); }}
-              >
-                ›
-              </button>
+             <button
+              className="hero-arrow hero-arrow-left"
+              onClick={e => { e.stopPropagation(); setSlideIndex(i => (i - 1 + newArrivals.length) % newArrivals.length); }}
+              style={{ direction: 'ltr' }}
+            >
+              ‹
+            </button>
+            <button
+              className="hero-arrow hero-arrow-right"
+              onClick={e => { e.stopPropagation(); setSlideIndex(i => (i + 1) % newArrivals.length); }}
+              style={{ direction: 'ltr' }}
+            >
+              ›
+            </button>
             </>
           )}
         </div>
