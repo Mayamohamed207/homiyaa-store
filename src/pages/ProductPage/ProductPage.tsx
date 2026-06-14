@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'; 
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,6 +13,13 @@ interface ProductColor {
   color_code: string;
   color_name_en: string;
   color_name_ar: string;
+}
+
+interface ProductVariant {
+  id: number;
+  variant_name_en: string;
+  variant_name_ar: string;
+  display_order: number;
 }
 
 interface Product {
@@ -30,6 +37,7 @@ interface Product {
   is_popular: boolean;
   product_images: { image_url: string }[];
   product_colors: ProductColor[];
+  product_variants: ProductVariant[];
 }
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
@@ -44,6 +52,7 @@ const ProductPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -57,16 +66,37 @@ const ProductPage = () => {
   const [wishlisted, setWishlisted] = useState(false);
 
   useEffect(() => {
+    if (!user || !product) return;
+    supabase
+      .from('wishlists')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', product.id)
+      .maybeSingle()
+      .then(({ data }) => setWishlisted(!!data));
+  }, [user, product?.id]);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
     const fetchProduct = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
-        .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
+        .select(
+          '*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, display_order)'
+        )
         .eq('id', id)
         .single();
 
-      if (!error && data) setProduct(data);
+      if (!error && data) {
+        // Sort variants by display_order
+        if (data.product_variants) {
+          data.product_variants.sort(
+            (a: ProductVariant, b: ProductVariant) => a.display_order - b.display_order
+          );
+        }
+        setProduct(data);
+      }
       setLoading(false);
     };
     fetchProduct();
@@ -95,6 +125,7 @@ const ProductPage = () => {
 
   const images = product.product_images || [];
   const colors = product.product_colors || [];
+  const variants = product.product_variants || [];
   const currentImage = images.length > 0 ? images[activeIdx].image_url : FALLBACK_IMAGE;
   const mainProductCartImage = images.length > 0 ? images[0].image_url : FALLBACK_IMAGE;
 
@@ -103,14 +134,31 @@ const ProductPage = () => {
   const description = isRTL ? product.description_ar : product.description_en;
   const displayPrice = product.discount_price ?? product.price;
 
-  const goNext = () => { if (images.length > 1) setActiveIdx(i => (i + 1) % images.length); };
-  const goPrev = () => { if (images.length > 1) setActiveIdx(i => (i - 1 + images.length) % images.length); };
+  const goNext = () => {
+    if (images.length > 1) setActiveIdx(i => (i + 1) % images.length);
+  };
+  const goPrev = () => {
+    if (images.length > 1) setActiveIdx(i => (i - 1 + images.length) % images.length);
+  };
 
   const handleAddToCart = () => {
     if (!addToCart || product.is_sold_out) return;
 
     if (colors.length > 0 && selectedColor === null) {
-      toast.error(isRTL ? '⚠️ يجب اختيار لون للمنتج أولاً قبل إضافته إلى السلة!' : '⚠️ Please pick a color option on this item configuration layout grid before checking out!');
+      toast.error(
+        isRTL
+          ? '⚠️ يجب اختيار لون للمنتج أولاً قبل إضافته إلى السلة!'
+          : '⚠️ Please pick a color before adding to cart!'
+      );
+      return;
+    }
+
+    if (variants.length > 0 && selectedVariant === null) {
+      toast.error(
+        isRTL
+          ? '⚠️ يجب اختيار الخيار المطلوب أولاً!'
+          : '⚠️ Please select an option before adding to cart!'
+      );
       return;
     }
 
@@ -119,7 +167,15 @@ const ProductPage = () => {
       chosenColorPayload = {
         color_code: colors[selectedColor].color_code,
         color_name_en: colors[selectedColor].color_name_en,
-        color_name_ar: colors[selectedColor].color_name_ar
+        color_name_ar: colors[selectedColor].color_name_ar,
+      };
+    }
+
+    let chosenVariantPayload = null;
+    if (selectedVariant !== null && variants[selectedVariant]) {
+      chosenVariantPayload = {
+        variant_name_en: variants[selectedVariant].variant_name_en,
+        variant_name_ar: variants[selectedVariant].variant_name_ar,
       };
     }
 
@@ -130,21 +186,23 @@ const ProductPage = () => {
       price: displayPrice,
       image: mainProductCartImage,
       quantity: 1,
-      selected_color: chosenColorPayload
+      selected_color: chosenColorPayload,
+      selected_variant: chosenVariantPayload,
     });
+
+    toast.success(isRTL ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };
 
   return (
     <div className="pp-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="pp-container">
-
         <button className="pp-back-btn" onClick={() => navigate(-1)}>
           <BackIcon size={18} />
           {isRTL ? 'العودة' : 'Back'}
         </button>
 
         <div className="pp-layout">
-
+          {/* Gallery */}
           <div className="pp-gallery-col">
             <div
               className="pp-main-image-wrap"
@@ -156,7 +214,9 @@ const ProductPage = () => {
                 const dx = e.changedTouches[0].clientX - touchStartX.current;
                 const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
                 if (Math.abs(dx) > 40 && dy < 60) {
-                  dx < 0 ? (isRTL ? goPrev() : goNext()) : (isRTL ? goNext() : goPrev());
+                  dx < 0
+                    ? isRTL ? goPrev() : goNext()
+                    : isRTL ? goNext() : goPrev();
                 }
               }}
             >
@@ -173,7 +233,9 @@ const ProductPage = () => {
 
               <div className="pp-img-badges">
                 {product.is_sold_out && (
-                  <span className="pp-badge pp-badge-sold">{isRTL ? 'نفذت الكمية' : 'Sold Out'}</span>
+                  <span className="pp-badge pp-badge-sold">
+                    {isRTL ? 'نفذت الكمية' : 'Sold Out'}
+                  </span>
                 )}
                 {product.is_popular && !product.is_sold_out && (
                   <span className="pp-badge pp-badge-pop">{isRTL ? 'شائع' : 'Popular'}</span>
@@ -184,19 +246,32 @@ const ProductPage = () => {
                 className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
                 aria-label="Wishlist"
                 onClick={async () => {
-                    if (!user) { toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first'); return; }
-                    if (wishlisted) {
-                    await supabase.from('wishlists').delete().match({ user_id: user.id, product_id: product.id });
+                  if (!user) {
+                    toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first');
+                    return;
+                  }
+                  if (wishlisted) {
+                    await supabase
+                      .from('wishlists')
+                      .delete()
+                      .match({ user_id: user.id, product_id: product.id });
                     setWishlisted(false);
                     toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
-                    } else {
-                    await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+                  } else {
+                    await supabase
+                      .from('wishlists')
+                      .insert({ user_id: user.id, product_id: product.id });
                     setWishlisted(true);
                     toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
-                    }
+                  }
                 }}
-                >  <Heart size={18} fill={wishlisted ? '#ef4444' : 'none'} color={wishlisted ? '#ef4444' : 'currentColor'} />
-            </button>
+              >
+                <Heart
+                  size={18}
+                  fill={wishlisted ? '#ef4444' : 'none'}
+                  color={wishlisted ? '#ef4444' : 'currentColor'}
+                />
+              </button>
 
               {images.length > 1 && (
                 <>
@@ -206,7 +281,6 @@ const ProductPage = () => {
                   <button className="pp-arrow pp-arrow-next" onClick={goNext} aria-label="Next">
                     <NextIcon size={20} />
                   </button>
-
                   <div className="pp-dots">
                     {images.map((_, i) => (
                       <button
@@ -235,6 +309,7 @@ const ProductPage = () => {
             )}
           </div>
 
+          {/* Details */}
           <div className="pp-details-col">
             <p className="pp-cat-tag">{category}</p>
             <h1 className="pp-title">{name}</h1>
@@ -262,14 +337,17 @@ const ProductPage = () => {
 
             <hr className="pp-divider" />
 
+            {/* Color selector */}
             {colors.length > 0 && (
               <div className="pp-colors-section">
                 <p className="pp-section-label">
-                  {isRTL ? ' اختر اللون / الشكل' : 'Select Color/Shape'}
+                  {isRTL ? 'اختر اللون / الشكل' : 'Select Color/Shape'}
                   {selectedColor !== null && (
                     <span className="pp-selected-color-name">
                       {': '}
-                      {isRTL ? colors[selectedColor].color_name_ar : colors[selectedColor].color_name_en}
+                      {isRTL
+                        ? colors[selectedColor].color_name_ar
+                        : colors[selectedColor].color_name_en}
                     </span>
                   )}
                 </p>
@@ -295,9 +373,39 @@ const ProductPage = () => {
               </div>
             )}
 
+            {/* Variant selector */}
+            {variants.length > 0 && (
+              <div className="pp-variants-section">
+                <p className="pp-section-label">
+                  {isRTL ? 'اختر الخيار' : 'Select Option'}
+                  {selectedVariant !== null && (
+                    <span className="pp-selected-color-name">
+                      {': '}
+                      {isRTL
+                        ? variants[selectedVariant].variant_name_ar
+                        : variants[selectedVariant].variant_name_en}
+                    </span>
+                  )}
+                </p>
+                <div className="pp-variant-row">
+                  {variants.map((v, idx) => (
+                    <button
+                      key={idx}
+                      className={`pp-variant-pill ${selectedVariant === idx ? 'selected' : ''}`}
+                      onClick={() => setSelectedVariant(selectedVariant === idx ? null : idx)}
+                    >
+                      {isRTL ? v.variant_name_ar : v.variant_name_en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {description && (
               <div className="pp-desc-section">
-                <p className="pp-section-label">{isRTL ? 'تفاصيل المنتج' : 'Product Details'}</p>
+                <p className="pp-section-label">
+                  {isRTL ? 'تفاصيل المنتج' : 'Product Details'}
+                </p>
                 <p className="pp-desc-text">{description}</p>
               </div>
             )}
@@ -310,12 +418,11 @@ const ProductPage = () => {
               >
                 <ShoppingCart size={20} />
                 {product.is_sold_out
-                  ? (isRTL ? 'نفذت الكمية' : 'Out of Stock')
-                  : (isRTL ? 'أضف إلى السلة' : 'Add to Cart')}
+                  ? isRTL ? 'نفذت الكمية' : 'Out of Stock'
+                  : isRTL ? 'أضف إلى السلة' : 'Add to Cart'}
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -16,6 +16,13 @@ export interface ProductColor {
   color_name_ar: string;
 }
 
+export interface ProductVariant {
+  id?: number;
+  variant_name_en: string;
+  variant_name_ar: string;
+  display_order?: number;
+}
+
 export interface Product {
   id: number;
   name_en: string;
@@ -32,6 +39,7 @@ export interface Product {
   is_new_arrival?: boolean;
   product_images: { image_url: string }[];
   product_colors: ProductColor[];
+  product_variants?: ProductVariant[];
 }
 
 interface ProductCardProps {
@@ -40,7 +48,7 @@ interface ProductCardProps {
   isAdminMode?: boolean;
   onEdit?: (product: Product) => void;
   onDelete?: (id: number) => void;
-  onAddToCart?: (product: Product, selectedColor: ProductColor) => void;
+  onAddToCart?: (product: Product, selectedColor: ProductColor, selectedVariant?: ProductVariant | null) => void;
 }
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
@@ -51,11 +59,12 @@ const ProductCard = ({
   isAdminMode = false,
   onEdit,
   onDelete,
-  onAddToCart
+  onAddToCart,
 }: ProductCardProps) => {
   const navigate = useNavigate();
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [chosenColorIndex, setChosenColorIndex] = useState<number | null>(null);
+  const [chosenVariantIndex, setChosenVariantIndex] = useState<number | null>(null);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -81,7 +90,10 @@ const ProductCard = ({
       return;
     }
     if (wishlisted) {
-      await supabase.from('wishlists').delete().match({ user_id: user.id, product_id: product.id });
+      await supabase
+        .from('wishlists')
+        .delete()
+        .match({ user_id: user.id, product_id: product.id });
       setWishlisted(false);
       toast.success(language === 'ar' ? 'تم الحذف من المفضلة' : 'Removed from Favorites');
     } else {
@@ -100,10 +112,12 @@ const ProductCard = ({
   }
 
   const images = product.product_images || [];
-  const currentImageUrl = images.length > 0 && images[activeImgIndex]
-    ? images[activeImgIndex].image_url
-    : FALLBACK_IMAGE;
+  const currentImageUrl =
+    images.length > 0 && images[activeImgIndex]
+      ? images[activeImgIndex].image_url
+      : FALLBACK_IMAGE;
   const colors = product.product_colors || [];
+  const variants = product.product_variants || [];
 
   const handleCardRedirection = () => {
     if (!isAdminMode) navigate(`/product/${product.id}`);
@@ -111,14 +125,30 @@ const ProductCard = ({
 
   const handleCartClick = () => {
     if (product.is_sold_out || !onAddToCart) return;
+
     if (colors.length > 0 && chosenColorIndex === null) {
       toast.error(language === 'ar' ? '⚠️ يرجى اختيار لون أولاً!' : '⚠️ Please select a color!');
       return;
     }
-    const assignedColor = colors.length > 0
-      ? colors[chosenColorIndex!]
-      : { color_code: '#000000', color_name_en: 'Default', color_name_ar: '' };
-    onAddToCart(product, assignedColor);
+
+    if (variants.length > 0 && chosenVariantIndex === null) {
+      toast.error(
+        language === 'ar' ? '⚠️ يرجى اختيار الخيار أولاً!' : '⚠️ Please select an option!'
+      );
+      return;
+    }
+
+    const assignedColor =
+      colors.length > 0 && chosenColorIndex !== null
+        ? colors[chosenColorIndex]
+        : { color_code: '#000000', color_name_en: 'Default', color_name_ar: '' };
+
+    const assignedVariant =
+      variants.length > 0 && chosenVariantIndex !== null
+        ? variants[chosenVariantIndex]
+        : null;
+
+    onAddToCart(product, assignedColor, assignedVariant);
     toast.success(language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };
 
@@ -189,7 +219,10 @@ const ProductCard = ({
                 key={dotIdx}
                 type="button"
                 className={`image-dot ${dotIdx === activeImgIndex ? 'active' : ''}`}
-                onClick={e => { e.stopPropagation(); setActiveImgIndex(dotIdx); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setActiveImgIndex(dotIdx);
+                }}
               />
             ))}
           </div>
@@ -197,6 +230,7 @@ const ProductCard = ({
       </div>
 
       <div className="product-info">
+        {/* Color swatches */}
         {colors.length > 0 && (
           <div className="product-colors">
             {colors.map((c, idx) => (
@@ -219,12 +253,29 @@ const ProductCard = ({
           </div>
         )}
 
+        {/* Variant pills */}
+        {variants.length > 0 && (
+          <div className="product-variants" onClick={e => e.stopPropagation()}>
+            {variants.map((v, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`product-variant-pill ${chosenVariantIndex === idx ? 'selected' : ''}`}
+                onClick={e => {
+                  e.stopPropagation();
+                  setChosenVariantIndex(chosenVariantIndex === idx ? null : idx);
+                }}
+              >
+                {language === 'ar' ? v.variant_name_ar : v.variant_name_en}
+              </button>
+            ))}
+          </div>
+        )}
+
         <p className="product-name line-clamp-2">{name}</p>
         <p className="product-category line-clamp-1">{category}</p>
 
-        {/* ── Footer: price stack LEFT, cart button RIGHT ── */}
         <div className="product-footer">
-
           {isAdminMode ? (
             <>
               <div className="product-price-stack">
@@ -236,10 +287,18 @@ const ProductCard = ({
                 )}
               </div>
               <div className="admin-actions-wrapper" onClick={e => e.stopPropagation()}>
-                <button type="button" className="admin-edit-action-btn" onClick={() => onEdit?.(product)}>
+                <button
+                  type="button"
+                  className="admin-edit-action-btn"
+                  onClick={() => onEdit?.(product)}
+                >
                   <Edit size={15} />
                 </button>
-                <button type="button" className="admin-delete-action-btn" onClick={() => onDelete?.(product.id)}>
+                <button
+                  type="button"
+                  className="admin-delete-action-btn"
+                  onClick={() => onDelete?.(product.id)}
+                >
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -266,7 +325,6 @@ const ProductCard = ({
               </div>
             </>
           )}
-
         </div>
       </div>
     </Card>

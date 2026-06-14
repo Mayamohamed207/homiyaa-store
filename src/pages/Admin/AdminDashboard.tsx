@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal, BarChart2 } from 'lucide-react';
+import { Plus, Image, Palette, X, ClipboardList, Package, Trash2, Settings, Layers, GripHorizontal, BarChart2, Tag } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import AdminProductCard from './AdminProductCard';
 import AdminOrdersPanel, { CustomerOrder } from './AdminOrdersPanel';
@@ -38,6 +38,13 @@ interface ColorInput {
   color_code: string;
 }
 
+// New: variant input (e.g. "6-piece set", "4-piece set")
+interface VariantInput {
+  id: string;
+  variant_name_en: string;
+  variant_name_ar: string;
+}
+
 interface UnifiedImage {
   id: string;
   type: 'existing' | 'new';
@@ -49,20 +56,33 @@ type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
 type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories' | 'usage';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com','mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
+const ADMIN_EMAILS = ['admin@homiyaa.com', 'HomiyaaStore@gmail.com', 'mayamohamed364@gmail.com', 'hussein70mohamedeg@gmail.com'];
 
 const initialFormState: ProductFormState = {
   name_en: '', name_ar: '', description_en: '', description_ar: '',
   price: '', discount_price: '', category_en: '', category_ar: '',
-stock_quantity: '', is_popular: false, is_sold_out: false, is_new_arrival: false,
+  stock_quantity: '', is_popular: false, is_sold_out: false, is_new_arrival: false,
 };
+
+const emptyColor = (): ColorInput => ({
+  id: `c-${Date.now()}-${Math.random()}`,
+  color_name_en: '',
+  color_name_ar: '',
+  color_code: '#000000',
+});
+
+const emptyVariant = (): VariantInput => ({
+  id: `v-${Date.now()}-${Math.random()}`,
+  variant_name_en: '',
+  variant_name_ar: '',
+});
 
 const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: string }) => {
   const { t, isRtl } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // ── All state declarations first ──
+  // ── State ──
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTabOption>('products');
@@ -73,7 +93,8 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
   const [editMode, setEditMode] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [formImages, setFormImages] = useState<UnifiedImage[]>([]);
-  const [colors, setColors] = useState<ColorInput[]>([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+  const [colors, setColors] = useState<ColorInput[]>([emptyColor()]);
+  const [variants, setVariants] = useState<VariantInput[]>([emptyVariant()]);
   const [formData, setFormData] = useState<ProductFormState>(initialFormState);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('latest');
@@ -82,9 +103,8 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
   const isAdmin = !!(user?.email && ADMIN_EMAILS.includes(user.email));
 
-  // ── All useEffects next (NO early returns before this point) ──
+  // ── Effects ──
 
-  // Redirect signed-in non-admins
   useEffect(() => {
     if (user !== null && !isAdmin) {
       navigate('/');
@@ -92,14 +112,10 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     }
   }, [user, isAdmin]);
 
-  // Auto-authenticate admin users without needing password
   useEffect(() => {
-    if (isAdmin) {
-      setIsAuthenticated(true);
-    }
+    if (isAdmin) setIsAuthenticated(true);
   }, [isAdmin]);
 
-  // Fetch data once authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchProducts();
@@ -109,18 +125,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     }
   }, [isAuthenticated]);
 
-  // ── All handler functions ──
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      toast.success(t('Welcome back, Admin! 👋', 'مرحباً بك مجدداً أيها المسؤول! 👋'));
-    } else {
-      toast.error(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
-    }
-    setPassword('');
-  };
+  // ── Fetchers ──
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -147,6 +152,8 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     if (data) setDbShippingRows(data);
   };
 
+  // ── Image handlers ──
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files).map((file: File, index: number) => ({
@@ -169,20 +176,37 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     });
   };
 
-  const handleAddColorRow = () =>
-    setColors([...colors, { id: `c-${Date.now()}-${Math.random()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+  // ── Color handlers ──
+
+  const handleAddColorRow = () => setColors(prev => [...prev, emptyColor()]);
 
   const handleRemoveColorRow = (id: string) => {
-    if (colors.length === 1) {
-      setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
-    } else {
-      setColors(colors.filter(c => c.id !== id));
-    }
+    setColors(prev => {
+      if (prev.length === 1) return [emptyColor()];
+      return prev.filter(c => c.id !== id);
+    });
   };
 
   const handleColorChange = (id: string, field: keyof Omit<ColorInput, 'id'>, value: string) => {
-    setColors(colors.map(c => c.id === id ? { ...c, [field]: value } : c));
+    setColors(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
+
+  // ── Variant handlers ──
+
+  const handleAddVariantRow = () => setVariants(prev => [...prev, emptyVariant()]);
+
+  const handleRemoveVariantRow = (id: string) => {
+    setVariants(prev => {
+      if (prev.length === 1) return [emptyVariant()];
+      return prev.filter(v => v.id !== id);
+    });
+  };
+
+  const handleVariantChange = (id: string, field: keyof Omit<VariantInput, 'id'>, value: string) => {
+    setVariants(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+
+  // ── Form payload ──
 
   const getCleanPayload = () => {
     const payload = { ...formData } as any;
@@ -191,9 +215,14 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     delete payload.product_colors;
     payload.price = payload.price === '' ? 0 : Number(payload.price);
     payload.stock_quantity = payload.stock_quantity === '' ? 0 : Number(payload.stock_quantity);
-    payload.discount_price = payload.discount_price === '' || payload.discount_price === null ? null : Number(payload.discount_price);
+    payload.discount_price =
+      payload.discount_price === '' || payload.discount_price === null
+        ? null
+        : Number(payload.discount_price);
     return payload;
   };
+
+  // ── Save product ──
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,48 +234,80 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       const cleanPayload = getCleanPayload();
 
       if (editMode && productId) {
+        // Update core product row
         const { error } = await supabase.from('products').update(cleanPayload).eq('id', productId);
         if (error) throw new Error(error.message);
+
+        // Delete existing related rows — they'll all be re-inserted below
         await supabase.from('product_colors').delete().eq('product_id', productId);
+        await supabase.from('product_variants').delete().eq('product_id', productId);
       } else {
+        // Insert new product
         const { data, error } = await supabase.from('products').insert([cleanPayload]).select();
         if (error) throw new Error(error.message);
         productId = data[0].id;
       }
 
-      if (productId) {
-        await supabase.from('product_images').delete().eq('product_id', productId);
-        const finalImageRows = [];
+      if (!productId) throw new Error('No product ID after save');
 
-        for (let i = 0; i < formImages.length; i++) {
-          const imgItem = formImages[i];
-          if (imgItem.type === 'existing') {
-            finalImageRows.push({ product_id: productId, image_url: imgItem.url, display_order: i });
-          } else if (imgItem.type === 'new' && imgItem.file) {
-            const file = imgItem.file;
-            const fileExtension = file.name.split('.').pop();
-            const fileName = `${productId}_${Date.now()}_${i}.${fileExtension}`;
-            const { error: uploadError } = await supabase.storage.from('product-images').upload(fileName, file);
-            if (uploadError) throw uploadError;
-            const { data: publicUrlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
-            finalImageRows.push({ product_id: productId, image_url: publicUrlData.publicUrl, display_order: i });
-          }
-        }
+      // ── Images ──
+      await supabase.from('product_images').delete().eq('product_id', productId);
+      const finalImageRows = [];
 
-        if (finalImageRows.length > 0) {
-          await supabase.from('product_images').insert(finalImageRows);
+      for (let i = 0; i < formImages.length; i++) {
+        const imgItem = formImages[i];
+        if (imgItem.type === 'existing') {
+          finalImageRows.push({ product_id: productId, image_url: imgItem.url, display_order: i });
+        } else if (imgItem.type === 'new' && imgItem.file) {
+          const file = imgItem.file;
+          const fileExtension = file.name.split('.').pop();
+          const fileName = `${productId}_${Date.now()}_${i}.${fileExtension}`;
+          const { error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, file);
+          if (uploadError) throw uploadError;
+          const { data: publicUrlData } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+          finalImageRows.push({ product_id: productId, image_url: publicUrlData.publicUrl, display_order: i });
         }
       }
 
-      const activeColors = colors.filter(c => c.color_name_en.trim() && c.color_name_ar.trim());
-      if (activeColors.length > 0 && productId) {
-        const colorRows = activeColors.map(c => ({
+      if (finalImageRows.length > 0) {
+        await supabase.from('product_images').insert(finalImageRows);
+      }
+
+      // ── Colors ──
+      // FIX: only require at least one name field to be non-empty (not both)
+      // A color row is "active" if the English name OR the Arabic name is filled
+      const activeColors = colors.filter(
+        c => c.color_name_en.trim() !== '' || c.color_name_ar.trim() !== ''
+      );
+      if (activeColors.length > 0) {
+        const colorRows = activeColors.map((c, idx) => ({
           product_id: productId,
           color_name_en: c.color_name_en.trim(),
           color_name_ar: c.color_name_ar.trim(),
           color_code: c.color_code.trim() || '#000000',
+          display_order: idx,
         }));
-        await supabase.from('product_colors').insert(colorRows);
+        const { error: colorError } = await supabase.from('product_colors').insert(colorRows);
+        if (colorError) throw new Error(`Colors save failed: ${colorError.message}`);
+      }
+
+      // ── Variants ──
+      const activeVariants = variants.filter(
+        v => v.variant_name_en.trim() !== '' || v.variant_name_ar.trim() !== ''
+      );
+      if (activeVariants.length > 0) {
+        const variantRows = activeVariants.map((v, idx) => ({
+          product_id: productId,
+          variant_name_en: v.variant_name_en.trim(),
+          variant_name_ar: v.variant_name_ar.trim(),
+          display_order: idx,
+        }));
+        const { error: variantError } = await supabase.from('product_variants').insert(variantRows);
+        if (variantError) throw new Error(`Variants save failed: ${variantError.message}`);
       }
 
       setIsFormOpen(false);
@@ -259,11 +320,14 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     }
   };
 
+  // ── Open form helpers ──
+
   const openAddMode = () => {
     setEditMode(false);
     setFormData(initialFormState);
     setFormImages([]);
-    setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+    setColors([emptyColor()]);
+    setVariants([emptyVariant()]);
     setIsFormOpen(true);
   };
 
@@ -284,18 +348,60 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       is_sold_out: product.is_sold_out,
       is_new_arrival: product.is_new_arrival ?? false,
     });
-    setFormImages((product.product_images || []).map((img, index) => ({
-      id: `existing-${index}-${Math.random()}`,
-      type: 'existing',
-      url: img.image_url,
-    })));
 
-    const { data: fetchedColors } = await supabase.from('product_colors').select('*').eq('product_id', product.id);
-    if (fetchedColors && fetchedColors.length > 0) {
-      setColors(fetchedColors.map((c, i) => ({ id: `c-${i}`, color_name_en: c.color_name_en, color_name_ar: c.color_name_ar, color_code: c.color_code })));
+    setFormImages(
+      (product.product_images || []).map((img, index) => ({
+        id: `existing-${index}-${Math.random()}`,
+        type: 'existing',
+        url: img.image_url,
+      }))
+    );
+
+    // Fetch colors fresh from DB to avoid stale data
+    const { data: fetchedColors, error: colorFetchError } = await supabase
+      .from('product_colors')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('display_order', { ascending: true });
+
+    if (colorFetchError) {
+      toast.error('Failed to load colors');
+      setColors([emptyColor()]);
+    } else if (fetchedColors && fetchedColors.length > 0) {
+      setColors(
+        fetchedColors.map((c, i) => ({
+          id: `c-existing-${i}-${Math.random()}`,
+          color_name_en: c.color_name_en,
+          color_name_ar: c.color_name_ar,
+          color_code: c.color_code,
+        }))
+      );
     } else {
-      setColors([{ id: `c-${Date.now()}`, color_name_en: '', color_name_ar: '', color_code: '#000000' }]);
+      setColors([emptyColor()]);
     }
+
+    // Fetch variants fresh from DB
+    const { data: fetchedVariants, error: variantFetchError } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('display_order', { ascending: true });
+
+    if (variantFetchError) {
+      toast.error('Failed to load variants');
+      setVariants([emptyVariant()]);
+    } else if (fetchedVariants && fetchedVariants.length > 0) {
+      setVariants(
+        fetchedVariants.map((v, i) => ({
+          id: `v-existing-${i}-${Math.random()}`,
+          variant_name_en: v.variant_name_en,
+          variant_name_ar: v.variant_name_ar,
+        }))
+      );
+    } else {
+      setVariants([emptyVariant()]);
+    }
+
     setIsFormOpen(true);
   };
 
@@ -309,7 +415,10 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
   const processedProducts = useMemo(() => {
     let result = [...products];
-    if (selectedCategory !== 'all') result = result.filter(item => item.category_en.toLowerCase() === selectedCategory.toLowerCase());
+    if (selectedCategory !== 'all')
+      result = result.filter(
+        item => item.category_en.toLowerCase() === selectedCategory.toLowerCase()
+      );
     result.sort((a, b) => {
       if (sortBy === 'price-asc') return (a.discount_price ?? a.price) - (b.discount_price ?? b.price);
       if (sortBy === 'price-desc') return (b.discount_price ?? b.price) - (a.discount_price ?? a.price);
@@ -318,9 +427,19 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     return result;
   }, [products, selectedCategory, sortBy]);
 
-  // ── Early returns AFTER all hooks ──
+  // ── Password gate ──
 
-  // Show password gate for unauthenticated non-admin visitors
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      toast.success(t('Welcome back, Admin! 👋', 'مرحباً بك مجدداً أيها المسؤول! 👋'));
+    } else {
+      toast.error(t('Incorrect password!', 'كلمة المرور غير صحيحة!'));
+    }
+    setPassword('');
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="admin-lock-screen" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -338,56 +457,47 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     );
   }
 
-  // ── Main authenticated admin UI ──
+  // ── Main UI ──
+
   return (
     <div className="admin-container" dir={isRtl ? 'rtl' : 'ltr'}>
       {!isFormOpen && (
         <div className="admin-tabs">
-          <button
-            onClick={() => setActiveTab('products')}
-            className="admin-tab-btn"
-            style={{ background: activeTab === 'products' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'products' ? 'var(--white)' : 'var(--primary-800)' }}
-          >
-            <Package size={18} /> {t('Products', 'المنتجات')}
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className="admin-tab-btn"
-            style={{ background: activeTab === 'orders' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'orders' ? 'var(--white)' : 'var(--primary-800)' }}
-          >
-            <ClipboardList size={18} /> {t('Orders', 'الطلبات')}
-          </button>
-          <button
-            onClick={() => setActiveTab('shipping')}
-            className="admin-tab-btn"
-            style={{ background: activeTab === 'shipping' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'shipping' ? 'var(--white)' : 'var(--primary-800)' }}
-          >
-            <Settings size={18} /> {t('Shipping', 'أسعار الشحن')}
-          </button>
-          <button
-            onClick={() => setActiveTab('categories')}
-            className="admin-tab-btn"
-            style={{ background: activeTab === 'categories' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'categories' ? 'var(--white)' : 'var(--primary-800)' }}
-          >
-            <Layers size={18} /> {t('Categories', 'الأقسام')}
-          </button>
-
-          <button
-          onClick={() => setActiveTab('usage')}
-          className="admin-tab-btn"
-          style={{ background: activeTab === 'usage' ? 'var(--primary-800)' : 'transparent', color: activeTab === 'usage' ? 'var(--white)' : 'var(--primary-800)' }}
-        >
-          <BarChart2 size={18} /> {t('Usage', 'الاستخدام')}
-        </button>
+          {(
+            [
+              { key: 'products', icon: <Package size={18} />, label: t('Products', 'المنتجات') },
+              { key: 'orders', icon: <ClipboardList size={18} />, label: t('Orders', 'الطلبات') },
+              { key: 'shipping', icon: <Settings size={18} />, label: t('Shipping', 'أسعار الشحن') },
+              { key: 'categories', icon: <Layers size={18} />, label: t('Categories', 'الأقسام') },
+              { key: 'usage', icon: <BarChart2 size={18} />, label: t('Usage', 'الاستخدام') },
+            ] as { key: ActiveTabOption; icon: React.ReactNode; label: string }[]
+          ).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="admin-tab-btn"
+              style={{
+                background: activeTab === tab.key ? 'var(--primary-800)' : 'transparent',
+                color: activeTab === tab.key ? 'var(--white)' : 'var(--primary-800)',
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
         </div>
       )}
 
       {!isFormOpen ? (
         activeTab === 'orders' ? (
-          <AdminOrdersPanel orders={orders} setOrders={setOrders} loadingOrders={loadingOrders} onRefresh={fetchOrders} />
-       ) : activeTab === 'usage' ? (
-        <AdminUsagePanel />
-      ) : activeTab === 'shipping' || activeTab === 'categories' ? (
+          <AdminOrdersPanel
+            orders={orders}
+            setOrders={setOrders}
+            loadingOrders={loadingOrders}
+            onRefresh={fetchOrders}
+          />
+        ) : activeTab === 'usage' ? (
+          <AdminUsagePanel />
+        ) : activeTab === 'shipping' || activeTab === 'categories' ? (
           <AdminSettingsPanel
             activeTab={activeTab}
             dbLiveCategories={dbLiveCategories}
@@ -409,7 +519,9 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
                   <option value="all">{t('All Categories', 'جميع الأقسام')}</option>
                   {dbLiveCategories.map(cat => (
-                    <option key={cat.id} value={cat.name_en.toLowerCase()}>{cat.name_en} / {cat.name_ar}</option>
+                    <option key={cat.id} value={cat.name_en.toLowerCase()}>
+                      {cat.name_en} / {cat.name_ar}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -430,21 +542,36 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           </>
         )
       ) : (
+        /* ─────────────────── PRODUCT FORM ─────────────────── */
         <form onSubmit={handleSaveProduct} className="product-form">
           <div className="form-header">
-            <h3>{editMode ? t('Edit Product', 'تعديل المنتج') : t('Add Product', 'اضافة منتج جديدة')}</h3>
+            <h3>
+              {editMode ? t('Edit Product', 'تعديل المنتج') : t('Add Product', 'اضافة منتج جديدة')}
+            </h3>
           </div>
 
           <div className="form-grid">
+            {/* Names */}
             <div className="field">
               <label>Product Name (EN)</label>
-              <input type="text" required value={formData.name_en} onChange={e => setFormData({ ...formData, name_en: e.target.value })} />
+              <input
+                type="text"
+                required
+                value={formData.name_en}
+                onChange={e => setFormData({ ...formData, name_en: e.target.value })}
+              />
             </div>
             <div className="field">
               <label>اسم المنتج (بالعربي)</label>
-              <input type="text" required value={formData.name_ar} onChange={e => setFormData({ ...formData, name_ar: e.target.value })} />
+              <input
+                type="text"
+                required
+                value={formData.name_ar}
+                onChange={e => setFormData({ ...formData, name_ar: e.target.value })}
+              />
             </div>
 
+            {/* Category */}
             <div className="field full-width">
               <label>Select Category</label>
               <select
@@ -453,108 +580,266 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 value={formData.category_en || ''}
                 onChange={e => {
                   const matched = dbLiveCategories.find(c => c.name_en === e.target.value);
-                  setFormData({ ...formData, category_en: e.target.value, category_ar: matched ? matched.name_ar : '' });
+                  setFormData({
+                    ...formData,
+                    category_en: e.target.value,
+                    category_ar: matched ? matched.name_ar : '',
+                  });
                 }}
               >
                 <option value="" disabled>Choose Category Option...</option>
                 {dbLiveCategories.map(cat => (
-                  <option key={cat.id} value={cat.name_en}>{cat.name_en} / {cat.name_ar}</option>
+                  <option key={cat.id} value={cat.name_en}>
+                    {cat.name_en} / {cat.name_ar}
+                  </option>
                 ))}
               </select>
             </div>
 
+            {/* Pricing */}
             <div className="field">
               <label>Price (EGP)</label>
-              <input type="number" step="1" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input
+                type="number"
+                step="1"
+                required
+                value={formData.price}
+                onChange={e =>
+                  setFormData({ ...formData, price: e.target.value === '' ? '' : Number(e.target.value) })
+                }
+              />
             </div>
             <div className="field">
               <label>Price After Discount</label>
-              <input type="number" step="1" value={formData.discount_price ?? ''} onChange={e => setFormData({ ...formData, discount_price: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input
+                type="number"
+                step="1"
+                value={formData.discount_price ?? ''}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    discount_price: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
             </div>
             <div className="field full-width">
               <label>Stock Count</label>
-              <input type="number" step="1" required value={formData.stock_quantity} onChange={e => setFormData({ ...formData, stock_quantity: e.target.value === '' ? '' : Number(e.target.value) })} />
+              <input
+                type="number"
+                step="1"
+                required
+                value={formData.stock_quantity}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    stock_quantity: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
             </div>
 
+            {/* Descriptions */}
             <div className="field full-width">
               <label>Description (EN)</label>
-              <textarea value={formData.description_en || ''} onChange={e => setFormData({ ...formData, description_en: e.target.value })} />
+              <textarea
+                value={formData.description_en || ''}
+                onChange={e => setFormData({ ...formData, description_en: e.target.value })}
+              />
             </div>
             <div className="field full-width">
               <label>الوصف (بالعربي)</label>
-              <textarea value={formData.description_ar || ''} onChange={e => setFormData({ ...formData, description_ar: e.target.value })} />
+              <textarea
+                value={formData.description_ar || ''}
+                onChange={e => setFormData({ ...formData, description_ar: e.target.value })}
+              />
             </div>
 
+            {/* ── Images ── */}
             <div className="field full-width section-block">
               <span className="section-title"><Image size={16} /> Asset Media Manager</span>
               <input type="file" multiple accept="image/*" onChange={handleFileChange} />
-           <ReactSortable
-            list={formImages}
-            setList={setFormImages}
-            className="image-preview-grid"
-            animation={200}
-            forceFallback={true}
-            fallbackTolerance={5}
-            delay={150}
-            delayOnTouchOnly={true}
-          >
+              <ReactSortable
+                list={formImages}
+                setList={setFormImages}
+                className="image-preview-grid"
+                animation={200}
+                forceFallback={true}
+                fallbackTolerance={5}
+                delay={150}
+                delayOnTouchOnly={true}
+              >
                 {formImages.map((img, idx) => (
                   <div key={img.id} className="image-preview-item">
                     <img src={img.url} alt="preview" />
-                    <button type="button" className="img-delete-overlay" onClick={() => removeImage(img.id)}><X size={12} /></button>
+                    <button
+                      type="button"
+                      className="img-delete-overlay"
+                      onClick={() => removeImage(img.id)}
+                    >
+                      <X size={12} />
+                    </button>
                     <span className="image-order-badge">Slot {idx + 1}</span>
                   </div>
                 ))}
               </ReactSortable>
             </div>
 
+            {/* ── Colors ── */}
             <div className="field full-width section-block">
               <span className="section-title"><Palette size={16} /> Available Product Colors</span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--primary-500)', marginBottom: '0.5rem' }}>
+                Leave all rows blank if this product has no color options.
+              </p>
               <ReactSortable list={colors} setList={setColors} handle=".color-drag-handle">
                 {colors.map(color => (
                   <div key={color.id} className="color-input-row-modern">
-                    <div className="color-drag-handle" style={{ cursor: 'grab' }}><GripHorizontal size={16} /></div>
+                    <div className="color-drag-handle" style={{ cursor: 'grab' }}>
+                      <GripHorizontal size={16} />
+                    </div>
                     <div className="color-text-inputs-inputs-wrapper">
-                      <input type="text" placeholder="English Label" value={color.color_name_en} onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)} />
-                      <input type="text" placeholder="اسم اللون بالعربي" value={color.color_name_ar} onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)} />
+                      <input
+                        type="text"
+                        placeholder="English Label"
+                        value={color.color_name_en}
+                        onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="اسم اللون بالعربي"
+                        value={color.color_name_ar}
+                        onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)}
+                      />
                     </div>
                     <div className="color-picker-and-delete">
                       <div className="color-picker-swatch-container">
-                        <label className="color-swatch-label" style={{ backgroundColor: color.color_code }}>
-                          <input type="color" className="hidden-color-input" value={color.color_code} onChange={e => handleColorChange(color.id, 'color_code', e.target.value)} />
+                        <label
+                          className="color-swatch-label"
+                          style={{ backgroundColor: color.color_code }}
+                        >
+                          <input
+                            type="color"
+                            className="hidden-color-input"
+                            value={color.color_code}
+                            onChange={e => handleColorChange(color.id, 'color_code', e.target.value)}
+                          />
                         </label>
                         <span className="color-code-text">{color.color_code}</span>
                       </div>
-                      <button type="button" className="remove-color-row-btn" onClick={() => handleRemoveColorRow(color.id)}><Trash2 size={16} /></button>
+                      <button
+                        type="button"
+                        className="remove-color-row-btn"
+                        onClick={() => handleRemoveColorRow(color.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 ))}
               </ReactSortable>
-              <button type="button" onClick={handleAddColorRow} className="add-color-btn" style={{ marginTop: '0.5rem' }}>+ Add Color Row</button>
+              <button
+                type="button"
+                onClick={handleAddColorRow}
+                className="add-color-btn"
+                style={{ marginTop: '0.5rem' }}
+              >
+                + Add Color Row
+              </button>
             </div>
 
+            {/* ── Variants (new) ── */}
+            <div className="field full-width section-block">
+              <span className="section-title"><Tag size={16} /> Product Variants / Options</span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--primary-500)', marginBottom: '0.5rem' }}>
+                Use for sets, piece counts, shapes ..etc
+              </p>
+              <ReactSortable list={variants} setList={setVariants} handle=".variant-drag-handle">
+                {variants.map(variant => (
+                  <div key={variant.id} className="color-input-row-modern">
+                    <div className="variant-drag-handle color-drag-handle" style={{ cursor: 'grab' }}>
+                      <GripHorizontal size={16} />
+                    </div>
+                    <div className="color-text-inputs-inputs-wrapper">
+                      <input
+                        type="text"
+                        placeholder="Option label (EN) "
+                        value={variant.variant_name_en}
+                        onChange={e => handleVariantChange(variant.id, 'variant_name_en', e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="اسم الخيار بالعربي"
+                        value={variant.variant_name_ar}
+                        onChange={e => handleVariantChange(variant.id, 'variant_name_ar', e.target.value)}
+                      />
+                    </div>
+                    <div className="color-picker-and-delete">
+                      <button
+                        type="button"
+                        className="remove-color-row-btn"
+                        onClick={() => handleRemoveVariantRow(variant.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </ReactSortable>
+              <button
+                type="button"
+                onClick={handleAddVariantRow}
+                className="add-color-btn"
+                style={{ marginTop: '0.5rem' }}
+              >
+                + Add Variant Row
+              </button>
+            </div>
+
+            {/* Flags */}
             <div className="checkbox-field">
-              <input type="checkbox" id="popular" checked={formData.is_popular} onChange={e => setFormData({ ...formData, is_popular: e.target.checked })} />
+              <input
+                type="checkbox"
+                id="popular"
+                checked={formData.is_popular}
+                onChange={e => setFormData({ ...formData, is_popular: e.target.checked })}
+              />
               <label htmlFor="popular">Feature as Best Selling</label>
             </div>
             <div className="checkbox-field">
-              <input type="checkbox" id="soldout" checked={formData.is_sold_out} onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })} />
+              <input
+                type="checkbox"
+                id="soldout"
+                checked={formData.is_sold_out}
+                onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })}
+              />
               <label htmlFor="soldout">Out Of Stock</label>
             </div>
             <div className="checkbox-field">
-            <input
-              type="checkbox"
-              id="new_arrival"
-              checked={formData.is_new_arrival ?? false}
-              onChange={e => setFormData({ ...formData, is_new_arrival: e.target.checked })}
-            />
-            <label htmlFor="new_arrival">New Arrival</label>
-          </div>
+              <input
+                type="checkbox"
+                id="new_arrival"
+                checked={formData.is_new_arrival ?? false}
+                onChange={e => setFormData({ ...formData, is_new_arrival: e.target.checked })}
+              />
+              <label htmlFor="new_arrival">New Arrival</label>
+            </div>
           </div>
 
           <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={() => setIsFormOpen(false)}>{t('Cancel', 'إلغاء')}</button>
-            <button type="submit" className="save-submit-btn" disabled={isUploading}>{isUploading ? 'Saving...' : t('Save Product', 'حفظ المنتج')}</button>
+            <button
+              type="button"
+              className="cancel-btn"
+              onClick={() => setIsFormOpen(false)}
+            >
+              {t('Cancel', 'إلغاء')}
+            </button>
+            <button
+              type="submit"
+              className="save-submit-btn"
+              disabled={isUploading}
+            >
+              {isUploading ? 'Saving...' : t('Save Product', 'حفظ المنتج')}
+            </button>
           </div>
         </form>
       )}
