@@ -145,20 +145,39 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
   };
 
   const saveCategoryEdit = async (id: number) => {
-    if (!editCatEn.trim() || !editCatAr.trim()) return;
-    const { error } = await supabase.from('store_categories').update({
-      name_en: editCatEn.trim(),
-      name_ar: editCatAr.trim()
-    }).eq('id', id);
+  if (!editCatEn.trim() || !editCatAr.trim()) return;
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(t('Category updated!', 'تم تحديث القسم!'));
-      setEditingCatId(null);
-      fetchStoreCategories();
-    }
-  };
+  // Find the old category names before updating
+  const oldCat = dbLiveCategories.find(c => c.id === id);
+  if (!oldCat) return;
+
+  const { error } = await supabase.from('store_categories').update({
+    name_en: editCatEn.trim(),
+    name_ar: editCatAr.trim()
+  }).eq('id', id);
+
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+
+  const { error: productsError } = await supabase
+    .from('products')
+    .update({
+      category_en: editCatEn.trim(),
+      category_ar: editCatAr.trim(),
+    })
+    .eq('category_en', oldCat.name_en);
+
+  if (productsError) {
+    toast.error(t('Category updated but some products failed to sync.', 'تم تحديث القسم لكن بعض المنتجات لم تُحدَّث.'));
+  } else {
+    toast.success(t('Category updated and synced to all products!', 'تم تحديث القسم على جميع المنتجات!'));
+  }
+
+  setEditingCatId(null);
+  fetchStoreCategories();
+};
 
   // --- Shipping Handlers ---
   const handleCreateShippingItem = async (e: React.FormEvent) => {
