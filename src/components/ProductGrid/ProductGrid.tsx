@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient';
 import { ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
-import ProductCard, { Product, ProductColor } from '../ProductCard/ProductCard';
+import ProductCard, { Product, ProductColor, ProductVariant } from '../ProductCard/ProductCard';
 import './ProductGrid.css';
 
 interface ProductGridProps {
@@ -39,7 +39,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
+      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, display_order)')
       .order('display_order', { ascending: true });
     if (!error && data) setProducts(data);
     setLoading(false);
@@ -57,7 +57,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     loadStoreProducts();
   }, [loadStoreProducts]);
 
-  // Fetch categories from store_categories table — single source of truth
   useEffect(() => {
     loadStoreCategories();
   }, [loadStoreCategories]);
@@ -71,7 +70,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     return () => window.removeEventListener('storeCategoryChanged', handleGlobalCategoryChange);
   }, []);
 
-  // Refetch products + categories whenever admin edits a category
   useEffect(() => {
     const handleCategoriesUpdated = () => {
       loadStoreProducts();
@@ -86,7 +84,11 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
   };
 
-  const handleAddToCartMapping = (item: Product, chosenColor: ProductColor) => {
+  const handleAddToCartMapping = (
+    item: Product,
+    chosenColor: ProductColor,
+    chosenVariant?: ProductVariant | null
+  ) => {
     const activePrice = item.discount_price ? item.discount_price : item.price;
     const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
     const dynamicMainImage = item.product_images?.[0]?.image_url || fallbackImage;
@@ -98,12 +100,12 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
         price: activePrice,
         image: dynamicMainImage,
         quantity: 1,
-        selected_color: chosenColor
+        selected_color: chosenColor,
+        selected_variant: chosenVariant ?? null,
       });
     }
   };
 
-  // Categories come from store_categories table — always up to date
   const uniqueCategories = useMemo(() => {
     return storeCategories.map(cat => ({
       value: cat.name_en,
