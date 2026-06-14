@@ -46,7 +46,7 @@ const AdminOrdersPanel = ({
   loadingOrders: boolean;
   onRefresh: () => void;
 }) => {
-  const { t } = useLanguage(); 
+  const { t } = useLanguage();
 
   const handleUpdateStatus = async (orderId: number, currentStatus: string) => {
     const next = nextStatus(currentStatus);
@@ -54,7 +54,7 @@ const AdminOrdersPanel = ({
     if (!error) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: next } : o));
   };
 
-const handleDeleteOrder = (orderId: number) => {
+  const handleDeleteOrder = (orderId: number) => {
     toast((tToast) => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <span style={{ fontWeight: 600, color: '#0f172a' }}>
@@ -84,23 +84,64 @@ const handleDeleteOrder = (orderId: number) => {
           </button>
         </div>
       </div>
-    ), 
-    { 
+    ),
+    {
       duration: Infinity,
       position: 'top-center',
-      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' } 
+      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' },
     });
   };
 
   const translateStatus = (status: string) => {
     switch (status) {
-      case 'Pending': return t('Pending', ' انتظار التأكيد');
+      case 'Pending':   return t('Pending', 'انتظار التأكيد');
       case 'Confirmed': return t('Confirmed', 'تم التأكيد');
-      case 'Shipped': return t('Shipped', 'تم الشحن');
+      case 'Shipped':   return t('Shipped', 'تم الشحن');
       case 'Completed': return t('Completed', 'تم التوصيل');
       case 'Cancelled': return t('Cancelled', 'ملغي');
       default: return status;
     }
+  };
+
+  // Render color + variant chips for an order item
+  const renderItemMeta = (item: any) => {
+    const hasColor = item.colorChosen || item.colorChosenAr;
+    const hasVariant = item.variantChosen || item.variantChosenAr;
+    if (!hasColor && !hasVariant) return null;
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '3px' }}>
+        {hasColor && (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            fontSize: '0.7rem', fontWeight: 500,
+            background: '#f1f5f9', borderRadius: '10px',
+            padding: '1px 7px', color: '#475569',
+          }}>
+            {item.color_code && (
+              <span style={{
+                display: 'inline-block', width: '9px', height: '9px',
+                borderRadius: '50%', backgroundColor: item.color_code,
+                border: '1px solid rgba(0,0,0,0.18)', flexShrink: 0,
+              }} />
+            )}
+            {item.colorChosen}
+            {item.colorChosenAr ? ` / ${item.colorChosenAr}` : ''}
+          </span>
+        )}
+        {hasVariant && (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center',
+            fontSize: '0.7rem', fontWeight: 500,
+            background: '#ede9fe', borderRadius: '10px',
+            padding: '1px 7px', color: '#6d28d9',
+          }}>
+            {item.variantChosen}
+            {item.variantChosenAr ? ` / ${item.variantChosenAr}` : ''}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -133,8 +174,7 @@ const handleDeleteOrder = (orderId: number) => {
               const statusStyle = STATUS_STYLES[order.status as OrderStatus] ?? STATUS_STYLES.Pending;
               return (
                 <tr key={order.id}>
-
-               <td className="order-id-cell" style={{ whiteSpace: 'nowrap' }}>
+                  <td className="order-id-cell" style={{ whiteSpace: 'nowrap' }}>
                     #{order.id}-{new Date(order.created_at).getMonth() + 1}-{new Date(order.created_at).getDate()}-{new Date(order.created_at).getFullYear()}
                   </td>
 
@@ -143,40 +183,50 @@ const handleDeleteOrder = (orderId: number) => {
                     <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.customer_email}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.customer_phone}</div>
                   </td>
+
                   <td>
                     <div style={{ fontWeight: 500 }}>{order.governorate}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--primary-700)' }}>{order.detailed_address}</div>
                   </td>
+
                   <td>
                     <ul className="order-items-list">
                       {(order.items || []).map((item: any, idx: number) => (
-                        <li key={idx}>
-                          {t(item.name_en, item.name_ar) || t('Product', 'منتج')} ({t(item.colorChosen, item.colorChosenAr || item.colorChosen) || t('Default', 'الافتراضي')}) x{item.quantity}
+                        <li key={idx} style={{ marginBottom: '6px' }}>
+                          <span style={{ fontWeight: 500 }}>
+                            {t(item.name_en, item.name_ar) || t('Product', 'منتج')}
+                          </span>
+                          {' '}×{item.quantity}
+                          {renderItemMeta(item)}
                         </li>
                       ))}
                     </ul>
                   </td>
+
                   <td>
                     <div style={{ fontWeight: 700 }}>{order.total} {t('EGP', 'ج.م')}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--primary-700)' }}>
                       {t('Delivery:', 'الشحن:')} {order.shipping_cost} {t('EGP', 'ج.م')}
                     </div>
                   </td>
+
                   <td>
                     <button
                       onClick={() => handleUpdateStatus(order.id, order.status)}
                       className="status-update-badge"
-                      style={{
-                        background: statusStyle.bg,
-                        color: statusStyle.color,
-                      }}
+                      style={{ background: statusStyle.bg, color: statusStyle.color }}
                       title={t('Click to advance status', 'اضغط لتحديث الحالة للمرحلة التالية')}
                     >
                       {translateStatus(order.status)}
                     </button>
                   </td>
+
                   <td>
-                    <button onClick={() => handleDeleteOrder(order.id)} title={t('Delete this order', 'حذف هذا الطلب نهائياً')} className="order-action-delete-btn">
+                    <button
+                      onClick={() => handleDeleteOrder(order.id)}
+                      title={t('Delete this order', 'حذف هذا الطلب نهائياً')}
+                      className="order-action-delete-btn"
+                    >
                       <Trash2 size={15} />
                     </button>
                   </td>
@@ -187,7 +237,9 @@ const handleDeleteOrder = (orderId: number) => {
         </table>
 
         {orders.length === 0 && (
-          <div className="orders-empty-state">{t('No orders yet.', 'لا توجد طلبات مسجلة حتى الآن.')}</div>
+          <div className="orders-empty-state">
+            {t('No orders yet.', 'لا توجد طلبات مسجلة حتى الآن.')}
+          </div>
         )}
       </div>
     </div>

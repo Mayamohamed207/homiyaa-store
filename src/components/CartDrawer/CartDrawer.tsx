@@ -34,7 +34,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const [shippingOptions, setShippingOptions] = useState<DbShippingRecord[]>([]);
   const [selectedGovKey, setSelectedGovKey] = useState('');
 
-  // Pre-fill from logged-in user
   useEffect(() => {
     if (isOpen && user) {
       setEmail(user.email ?? '');
@@ -66,19 +65,27 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const grandTotal = subtotal + shippingCost;
 
   const buildOrderDetailsHtml = () => {
-    const rows = cart.map(item => `
-      <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#333;">
-          ${item.name_en} / ${item.name_ar}
-        </td>
-        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;">
-          x${item.quantity}
-        </td>
-        <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#111;white-space:nowrap;">
-          ${item.price * item.quantity} EGP
-        </td>
-      </tr>
-    `).join('');
+    const rows = cart.map(item => {
+      const colorLine = item.selected_color
+        ? `<br/><span style="font-size:11px;color:#777;">${item.selected_color.color_name_en} / ${item.selected_color.color_name_ar}</span>`
+        : '';
+      const variantLine = item.selected_variant
+        ? `<br/><span style="font-size:11px;color:#777;">${item.selected_variant.variant_name_en} / ${item.selected_variant.variant_name_ar}</span>`
+        : '';
+      return `
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#333;">
+            ${item.name_en} / ${item.name_ar}${colorLine}${variantLine}
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;">
+            x${item.quantity}
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#111;white-space:nowrap;">
+            ${item.price * item.quantity} EGP
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     return `
       <thead>
@@ -114,7 +121,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
     e.preventDefault();
     if (cart.length === 0 || loading || !activeGovRecord) return;
 
-    // If email entered and send confirmation checked, validate email format
     if (email.trim() && sendConfirmation) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
@@ -134,16 +140,20 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       governorate: govName,
       detailed_address: address,
       items: cart.map(i => ({
-      id: i.id,
-      name_en: i.name_en,
-      name_ar: i.name_ar,
-      quantity: i.quantity,
-      price: i.price,
-      image: i.image ?? null,
-      colorChosen: i.selected_color?.color_name_en ?? null,
-      colorChosenAr: i.selected_color?.color_name_ar ?? null,
-      color_code: i.selected_color?.color_code ?? null,
-    })),
+        id: i.id,
+        name_en: i.name_en,
+        name_ar: i.name_ar,
+        quantity: i.quantity,
+        price: i.price,
+        image: i.image ?? null,
+        // Color fields
+        colorChosen: i.selected_color?.color_name_en ?? null,
+        colorChosenAr: i.selected_color?.color_name_ar ?? null,
+        color_code: i.selected_color?.color_code ?? null,
+        // Variant fields
+        variantChosen: i.selected_variant?.variant_name_en ?? null,
+        variantChosenAr: i.selected_variant?.variant_name_ar ?? null,
+      })),
       subtotal,
       shipping_cost: shippingCost,
       total: grandTotal,
@@ -157,7 +167,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
       const orderId = String(data?.[0]?.id || 'N/A');
 
-      // Only send email if email was entered AND user opted in
       if (email.trim() && sendConfirmation) {
         await sendConfirmationEmail(orderId);
       }
@@ -171,15 +180,11 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       onClose();
 
       toast.success(
-        language === 'ar'
-          ? 'تم تسجيل طلبك بنجاح!'
-          : 'Order placed successfully!'
+        language === 'ar' ? 'تم تسجيل طلبك بنجاح!' : 'Order placed successfully!'
       );
     } catch (err: any) {
       toast.error(
-        language === 'ar'
-          ? `حدث خطأ: ${err.message}`
-          : `Checkout failed: ${err.message}`
+        language === 'ar' ? `حدث خطأ: ${err.message}` : `Checkout failed: ${err.message}`
       );
     } finally {
       setLoading(false);
@@ -211,14 +216,19 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             {/* Cart items */}
             <div className="cart-items-wrapper-list">
               {cart.map(item => (
-                <div key={`${item.id}-${item.selected_color?.color_code ?? 'none'}`} className="cart-item-row">
+                <div
+                  key={`${item.id}-${item.selected_color?.color_code ?? 'none'}-${item.selected_variant?.variant_name_en ?? 'none'}`}
+                  className="cart-item-row"
+                >
                   <img
                     src={item.image || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80'}
                     alt={item.name_en}
                     className="cart-thumb"
                   />
                   <div className="cart-details-info">
-                  <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
+                    <h4>{language === 'ar' ? item.name_ar : item.name_en}</h4>
+
+                    {/* Color row */}
                     {item.selected_color && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '2px' }}>
                         <span style={{
@@ -230,21 +240,48 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                           flexShrink: 0,
                         }} />
                         <span style={{ fontSize: '0.72rem', color: 'var(--primary-600)', fontWeight: 500 }}>
-                          {item.selected_color.color_name_en} / {item.selected_color.color_name_ar}
+                          {language === 'ar'
+                            ? item.selected_color.color_name_ar
+                            : item.selected_color.color_name_en}
                         </span>
                       </div>
                     )}
+
+                    {/* Variant row */}
+                    {item.selected_variant && (
+                      <div style={{ marginBottom: '2px' }}>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          color: 'var(--primary-600)',
+                          fontWeight: 500,
+                          background: 'var(--primary-100, #f1f5f9)',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                        }}>
+                          {language === 'ar'
+                            ? item.selected_variant.variant_name_ar
+                            : item.selected_variant.variant_name_en}
+                        </span>
+                      </div>
+                    )}
+
                     <span className="cart-price-tag">{item.price} EGP</span>
                     <div className="cart-counter-controls">
-                      <button type="button" onClick={() => updateQuantity(item.id, -1, item.selected_color ?? undefined)}>-</button>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, -1, item.selected_color ?? undefined, item.selected_variant ?? undefined)}
+                      >-</button>
                       <span className="count-qty">{item.quantity}</span>
-                      <button type="button" onClick={() => updateQuantity(item.id, 1, item.selected_color ?? undefined)}>+</button>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, 1, item.selected_color ?? undefined, item.selected_variant ?? undefined)}
+                      >+</button>
                     </div>
                   </div>
                   <button
                     type="button"
                     className="remove-item-btn"
-                    onClick={() => removeFromCart(item.id, item.selected_color ?? undefined)}
+                    onClick={() => removeFromCart(item.id, item.selected_color ?? undefined, item.selected_variant ?? undefined)}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -256,7 +293,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             <form onSubmit={handleCheckoutSubmit} className="checkout-shipping-form">
               <h3>{language === 'ar' ? 'تفاصيل الطلب والشحن' : 'Order & Shipping Details'}</h3>
 
-              {/* Name */}
               <div className="input-group">
                 <input
                   type="text"
@@ -267,7 +303,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 />
               </div>
 
-              {/* Phone */}
               <div className="input-group">
                 <input
                   type="tel"
@@ -278,7 +313,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 />
               </div>
 
-              {/* Email — optional */}
               <div className="input-group">
                 <input
                   type="email"
@@ -288,15 +322,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                     if (!e.target.value.trim()) setSendConfirmation(false);
                     else setSendConfirmation(true);
                   }}
-                  placeholder={
-                    language === 'ar'
-                      ? 'البريد الإلكتروني (اختياري)'
-                      : 'Email Address (optional)'
-                  }
+                  placeholder={language === 'ar' ? 'البريد الإلكتروني (اختياري)' : 'Email Address (optional)'}
                 />
               </div>
 
-              {/* Confirmation checkbox — only show if email entered */}
               {email.trim() && (
                 <div className="input-group confirmation-check-row">
                   <label className="confirmation-check-label">
@@ -314,7 +343,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
               )}
 
-              {/* Governorate */}
               <div className="input-group select-wrapper">
                 <label className="select-caption">
                   {language === 'ar' ? 'اختر المحافظة' : 'Select Governorate'}
@@ -332,7 +360,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 </select>
               </div>
 
-              {/* Address */}
               <div className="input-group">
                 <input
                   type="text"
@@ -343,7 +370,6 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 />
               </div>
 
-              {/* Summary */}
               <div className="checkout-summary-financial-card">
                 <div className="financial-row">
                   <span>{language === 'ar' ? 'سعر المنتج' : 'Subtotal'}</span>
@@ -354,7 +380,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   <span>{shippingCost} EGP</span>
                 </div>
                 <div className="financial-row final-total-row">
-                  <span>{language === 'ar' ? 'الإجمالي ' : 'Grand Total'}</span>
+                  <span>{language === 'ar' ? 'الإجمالي' : 'Grand Total'}</span>
                   <span>{grandTotal} EGP</span>
                 </div>
               </div>

@@ -12,13 +12,17 @@ export interface CartItem {
     color_name_en: string;
     color_name_ar: string;
   } | null;
+  selected_variant?: {
+    variant_name_en: string;
+    variant_name_ar: string;
+  } | null;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: any, chosenColor?: CartItem['selected_color']) => void;
-  updateQuantity: (id: number, amount: number, selected_color?: CartItem['selected_color']) => void;
-  removeFromCart: (id: number, selected_color?: CartItem['selected_color']) => void;
+  addToCart: (product: any, chosenColor?: CartItem['selected_color'], chosenVariant?: CartItem['selected_variant']) => void;
+  updateQuantity: (id: number, amount: number, selected_color?: CartItem['selected_color'], selected_variant?: CartItem['selected_variant']) => void;
+  removeFromCart: (id: number, selected_color?: CartItem['selected_color'], selected_variant?: CartItem['selected_variant']) => void;
   clearCart: () => void;
   cartCount: number;
 }
@@ -28,16 +32,12 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  // 1. Initial State Load with Fallback Error Protection Block
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const savedCart = localStorage.getItem('cart');
       if (!savedCart) return [];
-
       const parsedCart = JSON.parse(savedCart);
       if (!Array.isArray(parsedCart)) return [];
-
-      // Clean old object array formats down to clean flat string paths safely on boot
       return parsedCart.map((item: any) => {
         let flatImage = FALLBACK_IMAGE;
         if (typeof item.image === 'string') {
@@ -47,35 +47,40 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } else if (item.image_url) {
           flatImage = item.image_url;
         }
-
-        return {
-          ...item,
-          image: flatImage
-        };
+        return { ...item, image: flatImage };
       });
     } catch (error) {
-      console.error("Failed parsing cart out of localStorage:", error);
+      console.error('Failed parsing cart out of localStorage:', error);
       return [];
     }
   });
 
-  // 2. Sync State modifications into cache automatically
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product: any, chosenColor: CartItem['selected_color'] = null) => {
-    setCart((prev) => {
-      // Extract properties safely whether passed a raw database item or a pre-mapped catalog item
+  // Unique key for a cart item = id + color code + variant name
+  const itemKey = (
+    id: number,
+    color?: CartItem['selected_color'],
+    variant?: CartItem['selected_variant']
+  ) => `${id}__${color?.color_code ?? 'no-color'}__${variant?.variant_name_en ?? 'no-variant'}`;
+
+  const addToCart = (
+    product: any,
+    chosenColor: CartItem['selected_color'] = null,
+    chosenVariant: CartItem['selected_variant'] = null
+  ) => {
+    setCart(prev => {
       const productId = product.id;
       const nameEn = product.name_en;
       const nameAr = product.name_ar;
-      
-      const activePrice = product.discount_price !== undefined 
-        ? (product.discount_price ?? product.price) 
-        : product.price;
 
-      // CRITICAL SAFEGUARD: Safe extraction check avoiding '0' reading runtime crash error
+      const activePrice =
+        product.discount_price !== undefined
+          ? product.discount_price ?? product.price
+          : product.price;
+
       let imgUrl = FALLBACK_IMAGE;
       if (typeof product.image === 'string') {
         imgUrl = product.image;
@@ -85,13 +90,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         imgUrl = product.image_url;
       }
 
-      // Extract the selected color attribute variant data safely
       const targetColor = chosenColor || product.selected_color || null;
+      const targetVariant = chosenVariant || product.selected_variant || null;
 
-      // Match item uniqueness by both ID and its variant color choice
-      const existingIndex = prev.findIndex((item) => 
-        item.id === productId && 
-        item.selected_color?.color_code === targetColor?.color_code
+      const existingIndex = prev.findIndex(
+        item =>
+          itemKey(item.id, item.selected_color, item.selected_variant) ===
+          itemKey(productId, targetColor, targetVariant)
       );
 
       if (existingIndex > -1) {
@@ -109,19 +114,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           price: Number(activePrice),
           image: imgUrl,
           quantity: 1,
-          selected_color: targetColor
-        }
+          selected_color: targetColor,
+          selected_variant: targetVariant,
+        },
       ];
     });
   };
 
-  const updateQuantity = (id: number, amount: number, selected_color?: CartItem['selected_color']) => {
-    setCart(prevCart =>
-      prevCart.map(item => {
-        const matchId = item.id === id;
-        const matchColor = item.selected_color?.color_code === selected_color?.color_code;
-        
-        if (matchId && matchColor) {
+  const updateQuantity = (
+    id: number,
+    amount: number,
+    selected_color?: CartItem['selected_color'],
+    selected_variant?: CartItem['selected_variant']
+  ) => {
+    setCart(prev =>
+      prev.map(item => {
+        if (
+          itemKey(item.id, item.selected_color, item.selected_variant) ===
+          itemKey(id, selected_color, selected_variant)
+        ) {
           const newQty = item.quantity + amount;
           return newQty > 0 ? { ...item, quantity: newQty } : item;
         }
@@ -130,10 +141,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  const removeFromCart = (id: number, selected_color?: CartItem['selected_color']) => {
-    setCart(prevCart =>
-      prevCart.filter(item => 
-        !(item.id === id && item.selected_color?.color_code === selected_color?.color_code)
+  const removeFromCart = (
+    id: number,
+    selected_color?: CartItem['selected_color'],
+    selected_variant?: CartItem['selected_variant']
+  ) => {
+    setCart(prev =>
+      prev.filter(
+        item =>
+          itemKey(item.id, item.selected_color, item.selected_variant) !==
+          itemKey(id, selected_color, selected_variant)
       )
     );
   };
