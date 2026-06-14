@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Trash2, Edit2, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -17,6 +17,12 @@ export interface DbCategoryRecord {
   id: number;
   name_en: string;
   name_ar: string;
+}
+
+interface OrphanCategoryRecord {
+  category_en: string;
+  category_ar: string;
+  count: number;
 }
 
 interface AdminSettingsPanelProps {
@@ -39,7 +45,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
   // Local states for New Item creation
   const [newCatEn, setNewCatEn] = useState('');
   const [newCatAr, setNewCatAr] = useState('');
-  
+
   const [newGovEn, setNewGovEn] = useState('');
   const [newGovAr, setNewGovAr] = useState('');
   const [newGovCost, setNewGovCost] = useState<number | ''>('');
@@ -48,12 +54,42 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
   const [editingCatId, setEditingCatId] = useState<number | null>(null);
   const [editCatEn, setEditCatEn] = useState('');
   const [editCatAr, setEditCatAr] = useState('');
+  const [originalCatEn, setOriginalCatEn] = useState('');
 
   // Local states for Shipping Inline Editing
   const [editingShipId, setEditingShipId] = useState<number | null>(null);
   const [editShipEn, setEditShipEn] = useState('');
   const [editShipAr, setEditShipAr] = useState('');
   const [editShipCost, setEditShipCost] = useState<number | ''>('');
+
+  // Orphaned product categories (no matching store_categories row)
+  const [orphanCategories, setOrphanCategories] = useState<OrphanCategoryRecord[]>([]);
+
+  const fetchOrphanCategories = async () => {
+    const { data, error } = await supabase.rpc('get_orphan_categories');
+    if (!error && data) setOrphanCategories(data);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'categories') {
+      fetchOrphanCategories();
+    }
+  }, [activeTab, dbLiveCategories]);
+
+  const mergeOrphanInto = async (orphanEn: string, targetEn: string, targetAr: string) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ category_en: targetEn, category_ar: targetAr })
+      .ilike('category_en', orphanEn);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(t('Products moved to category!', 'تم نقل المنتجات للقسم!'));
+      fetchOrphanCategories();
+      window.dispatchEvent(new CustomEvent('storeCategoriesUpdated'));
+    }
+  };
 
   // --- Categories Handlers ---
   const handleCreateCategoryItem = async (e: React.FormEvent) => {
@@ -96,11 +132,11 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
           </button>
         </div>
       </div>
-    ), 
-    { 
+    ),
+    {
       duration: Infinity,
       position: 'top-center',
-      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' } 
+      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }
     });
   };
 
@@ -130,11 +166,11 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
           </button>
         </div>
       </div>
-    ), 
-    { 
+    ),
+    {
       duration: Infinity,
       position: 'top-center',
-      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' } 
+      style: { marginTop: '40vh', minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }
     });
   };
 
@@ -142,48 +178,62 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
     setEditingCatId(cat.id);
     setEditCatEn(cat.name_en);
     setEditCatAr(cat.name_ar);
+    setOriginalCatEn(cat.name_en);
   };
 
   const saveCategoryEdit = async (id: number) => {
-  if (!editCatEn.trim() || !editCatAr.trim()) return;
+    if (!editCatEn.trim() || !editCatAr.trim()) return;
 
-  // Find the old category names before updating
-  const oldCat = dbLiveCategories.find(c => c.id === id);
-  if (!oldCat) return;
+    const newNameEn = editCatEn.trim();
+    const newNameAr = editCatAr.trim();
 
-  const { error } = await supabase.from('store_categories').update({
-    name_en: editCatEn.trim(),
-    name_ar: editCatAr.trim()
-  }).eq('id', id);
+    // Check if renaming would collide with an existing different category (merge case)
+    const duplicateTarget = dbLiveCategories.find(
+      c => c.id !== id && c.name_en.toLowerCase() === newNameEn.toLowerCase()
+    );
 
-  if (error) {
-    toast.error(error.message);
-    return;
-  }
+    const { error } = await supabase.from('store_categories').update({
+      name_en: newNameEn,
+      name_ar: newNameAr
+    }).eq('id', id);
 
-  const { error: productsError } = await supabase
-    .from('products')
-    .update({
-      category_en: editCatEn.trim(),
-      category_ar: editCatAr.trim(),
-    })
-    .eq('category_en', oldCat.name_en);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
 
-  if (productsError) {
-    toast.error(t('Category updated but some products failed to sync.', 'تم تحديث القسم لكن بعض المنتجات لم تُحدَّث.'));
-  } else {
-    toast.success(t('Category updated and synced to all products!', 'تم تحديث القسم على جميع المنتجات!'));
-  }
+    // Sync all products that had the OLD name to the NEW name
+    const { error: productsError } = await supabase
+      .from('products')
+      .update({
+        category_en: newNameEn,
+        category_ar: newNameAr,
+      })
+      .ilike('category_en', originalCatEn.trim())
+      .select();
 
-  setEditingCatId(null);
-  fetchStoreCategories();
-};
+    if (productsError) {
+      toast.error(t('Category updated but some products failed to sync.', 'تم تحديث القسم لكن بعض المنتجات لم تُحدَّث.'));
+    } else {
+      toast.success(t('Category updated and synced to all matching products!', 'تم تحديث القسم على كل المنتجات المطابقة!'));
+    }
+
+    // If the new name now duplicates another category row, remove that duplicate
+    if (duplicateTarget) {
+      await supabase.from('store_categories').delete().eq('id', duplicateTarget.id);
+    }
+
+    setEditingCatId(null);
+    fetchStoreCategories();
+    fetchOrphanCategories();
+    window.dispatchEvent(new CustomEvent('storeCategoriesUpdated'));
+  };
 
   // --- Shipping Handlers ---
   const handleCreateShippingItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGovEn.trim() || !newGovAr.trim() || newGovCost === '') return;
-    
+
     const generatedKey = newGovEn.toLowerCase().trim().replace(/\s+/g, '_');
 
     const { error } = await supabase.from('shipping_matrix').insert([{
@@ -192,7 +242,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
       name_ar: newGovAr.trim(),
       cost: Number(newGovCost)
     }]);
-    
+
     if (error) {
       toast.error(error.message);
     } else {
@@ -236,7 +286,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
           <input type="number" placeholder={t('Cost EGP', 'التكلفة ج.م')} required value={newGovCost} onChange={e => setNewGovCost(e.target.value === '' ? '' : Number(e.target.value))} className="settings-input" />
           <button type="submit" className="settings-btn">{t('Add Location', 'إضافة محافظة')}</button>
         </form>
-        
+
         <div className="shipping-modern-list">
           {dbShippingRows.map(row => (
             <div key={row.id} className="shipping-card">
@@ -257,12 +307,12 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
                   <div className="shipping-info">
                     <span className="shipping-names">{row.name_en} / {row.name_ar}</span>
                   </div>
-                  
+
                   <div className="shipping-controls">
                     <div className="shipping-price-badge">
                       {row.cost} {t('EGP', 'ج.م')}
                     </div>
-                    
+
                     <div className="action-buttons-group">
                       <button onClick={() => startEditingShipping(row)} className="admin-action-btn btn-edit" title={t('Edit', 'تعديل')}>
                         <Edit2 size={16} />
@@ -290,7 +340,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
           <input type="text" placeholder={t('Arabic Name', 'اسم القسم بالعربي')} required value={newCatAr} onChange={e => setNewCatAr(e.target.value)} className="settings-input" />
           <button type="submit" className="settings-btn">{t('Create Category', 'اضافة قسم')}</button>
         </form>
-        
+
         <div className="categories-grid">
           {dbLiveCategories.map(cat => (
             <div key={cat.id} className="category-card">
@@ -324,6 +374,46 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
             </div>
           ))}
         </div>
+
+        {/* ── Orphaned categories sync panel ── */}
+        {orphanCategories.length > 0 && (
+          <div className="settings-panel orphan-panel" style={{ marginTop: '1.5rem', border: '1px solid #fca5a5', background: '#fef2f2' }}>
+            <h3 style={{ color: '#b91c1c' }}>
+              {t('Unmatched product categories', 'أقسام منتجات غير مطابقة')}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#7f1d1d', marginBottom: '1rem' }}>
+              {t(
+                'These products have a category that no longer exists in your category list. Move them into a current category below.',
+                'هذه المنتجات لديها قسم غير موجود في قائمة الأقسام الحالية. قم بنقلها لقسم حالي.'
+              )}
+            </p>
+            {orphanCategories.map(orphan => (
+              <div
+                key={orphan.category_en}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}
+              >
+                <span style={{ fontWeight: 600 }}>
+                  {orphan.category_en} / {orphan.category_ar} ({orphan.count})
+                </span>
+                <span>→</span>
+                <select
+                  className="settings-input"
+                  style={{ width: 'auto' }}
+                  onChange={e => {
+                    const target = dbLiveCategories.find(c => c.id === Number(e.target.value));
+                    if (target) mergeOrphanInto(orphan.category_en, target.name_en, target.name_ar);
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>{t('Move to...', 'نقل إلى...')}</option>
+                  {dbLiveCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name_en} / {cat.name_ar}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

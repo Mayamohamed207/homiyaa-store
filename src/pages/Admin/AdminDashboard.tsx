@@ -488,7 +488,16 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
             <div className="field full-width section-block">
               <span className="section-title"><Image size={16} /> Asset Media Manager</span>
               <input type="file" multiple accept="image/*" onChange={handleFileChange} />
-              <ReactSortable list={formImages} setList={setFormImages} className="image-preview-grid" animation={200}>
+           <ReactSortable
+            list={formImages}
+            setList={setFormImages}
+            className="image-preview-grid"
+            animation={200}
+            forceFallback={true}
+            fallbackTolerance={5}
+            delay={150}
+            delayOnTouchOnly={true}
+          >
                 {formImages.map((img, idx) => (
                   <div key={img.id} className="image-preview-item">
                     <img src={img.url} alt="preview" />

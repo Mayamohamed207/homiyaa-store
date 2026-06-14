@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
 import { ArrowUpDown } from 'lucide-react';
@@ -18,12 +18,12 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [products, setProducts] = useState<(Product & { is_hidden?: boolean })[]>([]);
+  const [storeCategories, setStoreCategories] = useState<{ name_en: string; name_ar: string }[]>([]);
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
 
-  
   useEffect(() => {
     if (!user) { setWishlistIds(new Set()); return; }
     supabase
@@ -35,18 +35,32 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
       });
   }, [user]);
 
-  useEffect(() => {
-    const loadStoreProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
+  const loadStoreProducts = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
       .from('products')
       .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
       .order('display_order', { ascending: true });
-      if (!error && data) setProducts(data);
-      setLoading(false);
-    };
-    loadStoreProducts();
+    if (!error && data) setProducts(data);
+    setLoading(false);
   }, []);
+
+  const loadStoreCategories = useCallback(async () => {
+    const { data } = await supabase
+      .from('store_categories')
+      .select('name_en, name_ar')
+      .order('name_en', { ascending: true });
+    if (data) setStoreCategories(data);
+  }, []);
+
+  useEffect(() => {
+    loadStoreProducts();
+  }, [loadStoreProducts]);
+
+  // Fetch categories from store_categories table — single source of truth
+  useEffect(() => {
+    loadStoreCategories();
+  }, [loadStoreCategories]);
 
   useEffect(() => {
     const handleGlobalCategoryChange = (e: Event) => {
@@ -56,6 +70,16 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     window.addEventListener('storeCategoryChanged', handleGlobalCategoryChange);
     return () => window.removeEventListener('storeCategoryChanged', handleGlobalCategoryChange);
   }, []);
+
+  // Refetch products + categories whenever admin edits a category
+  useEffect(() => {
+    const handleCategoriesUpdated = () => {
+      loadStoreProducts();
+      loadStoreCategories();
+    };
+    window.addEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
+    return () => window.removeEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
+  }, [loadStoreProducts, loadStoreCategories]);
 
   const handleCategorySelect = (value: string) => {
     setSelectedCategory(value);
@@ -79,21 +103,13 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     }
   };
 
+  // Categories come from store_categories table — always up to date
   const uniqueCategories = useMemo(() => {
-    const categoriesMap = new Map<string, string>();
-    products.forEach(p => {
-      if (p.is_hidden) return;
-      if (p.category_en && p.category_ar)
-        categoriesMap.set(
-          p.category_en.trim(),
-          language === 'ar' ? p.category_ar.trim() : p.category_en.trim()
-        );
-    });
-    return Array.from(categoriesMap.entries()).map(([enVal, localizedLabel]) => ({
-      value: enVal,
-      label: localizedLabel
+    return storeCategories.map(cat => ({
+      value: cat.name_en,
+      label: language === 'ar' ? cat.name_ar : cat.name_en,
     }));
-  }, [products, language]);
+  }, [storeCategories, language]);
 
   const processedProducts = useMemo(() => {
     let result = products.filter(item => !item.is_hidden);
@@ -157,14 +173,12 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     <section id="shop" className="product-grid-section">
       <div className="container">
 
-        {/* Categories header — arrow flush with text */}
         <div className="section-header" style={{ marginBottom: '0.75rem' }}>
           <h2 className="section-title">
             {language === 'ar' ? 'الأقسام' : 'Categories'}
           </h2>
         </div>
 
-        {/* Category pills */}
         <div className="category-pills-row">
           <button
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
@@ -207,7 +221,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           ))}
         </div>
 
-        {/* Products header + sort */}
         <div className="section-header">
           <h2 className="section-title">
             {selectedCategory === '__sales__'
@@ -233,7 +246,6 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
           </div>
         </div>
 
-        {/* Grid or empty */}
         {processedProducts.length === 0 ? (
           <div className="empty-store-state">
             <h3>{language === 'ar' ? 'لم يتم العثور على نتائج' : 'No products found'}</h3>
@@ -245,7 +257,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
             {(selectedCategory !== 'all' || searchQuery !== '') && (
               <button
                 className="reset-filters-btn"
-                onClick={() => { handleCategorySelect('all'); setSortBy('latest'); }}
+                onClick={() => { handleCategorySelect('all'); setSortBy('popular'); }}
               >
                 {language === 'ar' ? 'إعادة تعيين' : 'Reset Filters'}
               </button>
