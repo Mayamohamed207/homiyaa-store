@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
 import { ArrowUpDown } from 'lucide-react';
@@ -79,17 +80,17 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     return () => window.removeEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
   }, [loadStoreProducts, loadStoreCategories]);
 
- const handleCategorySelect = (value: string) => {
-  setSelectedCategory(value);
-  window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
+  const handleCategorySelect = (value: string) => {
+    setSelectedCategory(value);
+    window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
 
-  const productsSection = document.getElementById('shop') || document.getElementById('products') || document.getElementById('products-section');
-  if (productsSection) {
-    productsSection.scrollIntoView({ behavior: 'smooth' });
-  } else {
-    window.scrollTo({ top: 500, behavior: 'smooth' });
-  }
-};
+    const productsSection = document.getElementById('shop') || document.getElementById('products') || document.getElementById('products-section');
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 500, behavior: 'smooth' });
+    }
+  };
 
   const handleAddToCartMapping = (
     item: Product,
@@ -180,6 +181,34 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
 
   return (
     <section id="shop" className="product-grid-section">
+      {/* Dynamic E-Commerce Structured Data for Google */}
+      {processedProducts.length > 0 && (
+        <Helmet>
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              numberOfItems: processedProducts.length,
+              itemListElement: processedProducts.map((item, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                name: language === 'ar' ? item.name_ar : item.name_en,
+                url: `https://homyiaa.com/product/${item.id}`,
+                image: item.product_images?.[0]?.image_url || '',
+                offers: {
+                  '@type': 'Offer',
+                  priceCurrency: 'EGP',
+                  price: item.discount_price ?? item.price,
+                  availability: item.is_sold_out
+                    ? 'https://schema.org/OutOfStock'
+                    : 'https://schema.org/InStock',
+                },
+              })),
+            })}
+          </script>
+        </Helmet>
+      )}
+
       <div className="container">
 
         <div className="section-header" style={{ marginBottom: '0.75rem' }}>

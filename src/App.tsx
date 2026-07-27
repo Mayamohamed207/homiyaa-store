@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Helmet } from 'react-helmet-async';
 import Navbar from './components/Navbar/Navbar';
 import Hero from './components/Hero/Hero';
 import ProductGrid from './components/ProductGrid/ProductGrid';
@@ -67,6 +68,15 @@ function App() {
             path="/"
             element={
               <>
+                <Helmet>
+                  <title>Homiyaa | أدوات منزلية ومستلزمات المطبخ - Home Essentials</title>
+                  <meta name="description" content="تسوق أفضل الأدوات المنزلية، مستلزمات المطبخ والديكورات من هوميا مع توصيل سريع لجميع المحافظات." />
+                  <link rel="canonical" href="https://homyiaa.com/" />
+                  <meta property="og:type" content="website" />
+                  <meta property="og:title" content="Homiyaa | أدوات منزلية ومستلزمات المطبخ" />
+                  <meta property="og:description" content="أرقى الأدوات المنزلية ومستلزمات المطبخ بتوصيل سريع في مصر." />
+                  <meta property="og:url" content="https://homyiaa.com/" />
+                </Helmet>
                 <Hero />
                 <ProductGrid searchQuery={searchQuery} />
               </>
