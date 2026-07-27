@@ -1,22 +1,38 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Main Homepage -->
-  <url>
-    <loc>https://homyiaa.com/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
+import { supabase } from '../../supabaseClient';
 
-  <!-- Key Sections / Categories -->
+export async function GET() {
+  const baseUrl = 'https://homyiaa.com';
+
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, updated_at');
+
+  const productUrls = (products || [])
+    .map(
+      (product) => `
   <url>
-    <loc>https://homyiaa.com/#shop</loc>
+    <loc>${baseUrl}/product/${product.id}</loc>
+    <lastmod>${new Date(product.updated_at || Date.now()).toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  
+  </url>`
+    )
+    .join('');
+
+  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://homyiaa.com/#contact</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-</urlset>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>${productUrls}
+</urlset>`;
+
+  return new Response(sitemapXml, {
+    headers: {
+      'Content-Type': 'text/xml',
+      'Cache-Control': 's-maxage=86400, stale-while-revalidate',
+    },
+  });
+}
