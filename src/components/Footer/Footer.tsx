@@ -230,13 +230,30 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
             <motion.a 
               whileHover={{ scale: 1.1, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              href="mailto:homiyaastore@gmail.com" 
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                const mailto = "mailto:homiyaastore@gmail.com";
+                const webGmail = "https://mail.google.com/mail/?view=cm&fs=1&to=homiyaastore@gmail.com";
+                
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                  window.location.href = "googlegmail:///co?to=homiyaastore@gmail.com";
+                  
+                  setTimeout(() => {
+                    window.location.href = mailto;
+                  }, 500);
+                } else {
+                  window.open(webGmail, '_blank');
+                }
+              }}
               className="footer-icon-link gmail-hover"
-              aria-label="Email us at homiyaastore@gmail.com"
+              aria-label="Open Gmail App"
             >
               <Mail className="footer-icon" />
             </motion.a>
-            
+
           </div>
         </div>
 
