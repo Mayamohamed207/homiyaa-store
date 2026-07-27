@@ -341,7 +341,6 @@ html[dir="rtl"] .mobile-drawer-nav-item { text-align: right; }
   color: var(--primary-900);
 }
 
-/* ── Mobile search strip ── */
 .mobile-sticky-search-bar {
   display: none;
   width: 100%;

@@ -99,10 +99,11 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(t('Category Added!', 'تم إضافة القسم!'));
+    toast.success(t('Category Added!', 'تم إضافة القسم!'));
       setNewCatEn('');
       setNewCatAr('');
       fetchStoreCategories();
+      window.dispatchEvent(new CustomEvent('storeCategoriesUpdated'));
     }
   };
 
@@ -125,6 +126,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({
               await supabase.from('store_categories').delete().eq('id', id);
               fetchStoreCategories();
               toast.success(t('Category Removed', 'تم حذف القسم'));
+              window.dispatchEvent(new CustomEvent('storeCategoriesUpdated'));
             }}
             style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
           >

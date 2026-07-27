@@ -22,7 +22,6 @@ function App() {
         
         <Toaster
           position="top-center"
-          // FIX: This containerStyle ensures the toast wrapper always floats above the modal and its backdrop blur
           containerStyle={{
             zIndex: 999999, 
           }}

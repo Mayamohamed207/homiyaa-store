@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Facebook, Instagram } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { supabase } from '../../supabaseClient';
 import './Footer.css';
 
 interface FooterProps {
@@ -15,9 +16,24 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
   // Track the locally selected category to apply the active underline class
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  // 1. Synchronize active underline if the category is changed from the top dropdown filter,
-  // or if navigation events switch dashboard screens (e.g., to orders).
-  useEffect(() => {
+  // Live category list pulled from the DB so the footer always reflects
+  // whatever categories currently exist (added/edited/deleted/merged)
+  interface FooterCategory {
+    id: number;
+    name_en: string;
+    name_ar: string;
+  }
+  const [liveCategories, setLiveCategories] = useState<FooterCategory[]>([]);
+
+  const fetchFooterCategories = async () => {
+    const { data } = await supabase
+      .from('store_categories')
+      .select('id, name_en, name_ar')
+      .order('name_en', { ascending: true });
+    if (data) setLiveCategories(data);
+  };
+
+    useEffect(() => {
     const handleCategoryChangedFromOutside = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail) {
@@ -35,7 +51,7 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
       }
     };
 
-    window.addEventListener('storeCategoryChanged', handleCategoryChangedFromOutside);
+   window.addEventListener('storeCategoryChanged', handleCategoryChangedFromOutside);
     window.addEventListener('adminCategoryChanged', handleCategoryChangedFromOutside);
     window.addEventListener('adminNavigateTo', handleAdminNavigation);
     
@@ -46,18 +62,16 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
     };
   }, []);
 
-  // 2. Clear footer highlight dynamically on initial page load if inside administrative contexts
+  // 1b. Fetch categories on mount, and re-fetch any time the admin panel
+  // adds, edits, deletes, or merges a category.
   useEffect(() => {
-    const isAdmin = window.location.pathname.includes('/admin') || document.querySelector('.admin-dashboard') !== null;
-    if (isAdmin) {
-      // Check if a tab state tracker or text elements present 'orders' view state
-      const isViewingOrdersLog = document.body.innerHTML.toLowerCase().includes('orders') || window.location.hash.includes('orders');
-      if (isViewingOrdersLog) {
-        setActiveCategory('');
-      } else {
-        setActiveCategory('all');
-      }
-    }
+    fetchFooterCategories();
+
+    const handleCategoriesUpdated = () => fetchFooterCategories();
+    window.addEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
+    return () => {
+      window.removeEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
+    };
   }, []);
 
   const handleCategoryClick = (e: React.MouseEvent, categoryValue: string) => {
@@ -123,7 +137,7 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
         <div className="footer-links-group">
           <h4 className="footer-title">{t('Shop Collections', 'تسوّق منتجاتنا')}</h4>
           <ul className="footer-links-list">
-            <li>
+          <li>
               <a 
                 href="#" 
                 onClick={(e) => handleCategoryClick(e, 'all')} 
@@ -132,42 +146,17 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
                 {t('Shop All Products', 'كل المنتجات')}
               </a>
             </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => handleCategoryClick(e, 'mugs')} 
-                className={`footer-link ${activeCategory === 'mugs' ? 'active-footer-link' : ''}`}
-              >
-                {t('Mugs', 'مجات حرارية')}
-              </a>
-            </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => handleCategoryClick(e, 'kitchen essentials')} 
-                className={`footer-link ${activeCategory === 'kitchen essentials' ? 'active-footer-link' : ''}`}
-              >
-                {t('Kitchen Essentials', 'مستلزمات المطبخ')}
-              </a>
-            </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => handleCategoryClick(e, 'bathroom essentials')} 
-                className={`footer-link ${activeCategory === 'bathroom essentials' ? 'active-footer-link' : ''}`}
-              >
-                {t('Bathroom Essentials', 'مستلزمات الحمام')}
-              </a>
-            </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => handleCategoryClick(e, 'home essentials')} 
-                className={`footer-link ${activeCategory === 'home essentials' ? 'active-footer-link' : ''}`}
-              >
-                {t('Home Essentials', 'مستلزمات المنزل')}
-              </a>
-            </li>
+            {liveCategories.map(cat => (
+              <li key={cat.id}>
+                <a 
+                  href="#" 
+                  onClick={(e) => handleCategoryClick(e, cat.name_en)} 
+                  className={`footer-link ${activeCategory === cat.name_en.toLowerCase() ? 'active-footer-link' : ''}`}
+                >
+                  {t(cat.name_en, cat.name_ar)}
+                </a>
+              </li>
+            ))}
           </ul>
         </div>
 
