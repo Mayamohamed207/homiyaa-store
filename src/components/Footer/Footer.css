@@ -138,11 +138,26 @@ html[dir="rtl"] .footer-link:hover {
 
 .footer-social-icons {
   display: flex;
-  align-items: center;
+  align-items: flex-start; 
   gap: 1rem;
   flex-wrap: wrap;
 }
 
+.footer-social-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 3rem;
+}
+
+.footer-icon-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--warm-600);
+  text-align: center;
+  white-space: nowrap;
+}
 .footer-icon-link {
   display: flex;
   align-items: center;
