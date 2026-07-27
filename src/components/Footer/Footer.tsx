@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Facebook, Instagram } from 'lucide-react';
+import { Facebook, Instagram, Mail } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../supabaseClient';
 import './Footer.css';
@@ -225,6 +225,18 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
             >
               <Facebook className="footer-icon" />
             </motion.a>
+
+            {/* Gmail */}
+            <motion.a 
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              href="mailto:homiyaastore@gmail.com" 
+              className="footer-icon-link gmail-hover"
+              aria-label="Email us at homiyaastore@gmail.com"
+            >
+              <Mail className="footer-icon" />
+            </motion.a>
+            
           </div>
         </div>
 

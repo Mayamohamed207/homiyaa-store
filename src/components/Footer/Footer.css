@@ -184,6 +184,12 @@ html[dir="rtl"] .footer-link:hover {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
+.footer-icon-link.gmail-hover { 
+  color: #ea4335; /* Standard Google/Gmail Red */
+  border: 1px solid rgba(234, 67, 53, 0.25);
+  box-shadow: 0 4px 10px rgba(234, 67, 53, 0.08);
+}
+
 /* --- RESPONSIVE GRIDS --- */
 @media (min-width: 768px) {
   .footer-container {
@@ -194,3 +200,4 @@ html[dir="rtl"] .footer-link:hover {
     max-width: 380px; 
   }
 }
+
