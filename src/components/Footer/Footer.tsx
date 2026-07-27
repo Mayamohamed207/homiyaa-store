@@ -233,23 +233,36 @@ const Footer = ({ onSelectCategory }: FooterProps) => {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                const mailto = "mailto:homiyaastore@gmail.com";
-                const webGmail = "https://mail.google.com/mail/?view=cm&fs=1&to=homiyaastore@gmail.com";
+                const gmailApp = "googlegmail:///co?to=homiyaastore@gmail.com";
+                const gmailWeb = "https://mail.google.com/mail/?view=cm&fs=1&to=homiyaastore@gmail.com";
                 
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
                 if (isMobile) {
-                  window.location.href = "googlegmail:///co?to=homiyaastore@gmail.com";
-                  
+                  let appOpened = false;
+
+                  const handleBlur = () => {
+                    appOpened = true;
+                  };
+                  window.addEventListener('pagehide', handleBlur, { once: true });
+                  window.addEventListener('blur', handleBlur, { once: true });
+
+                  window.location.href = gmailApp;
+
                   setTimeout(() => {
-                    window.location.href = mailto;
-                  }, 500);
+                    window.removeEventListener('pagehide', handleBlur);
+                    window.removeEventListener('blur', handleBlur);
+
+                    if (!appOpened && !document.hidden) {
+                      window.location.href = gmailWeb;
+                    }
+                  }, 1000);
                 } else {
-                  window.open(webGmail, '_blank');
+                  window.open(gmailWeb, '_blank');
                 }
               }}
               className="footer-icon-link gmail-hover"
-              aria-label="Open Gmail App"
+              aria-label="Open Gmail"
             >
               <Mail className="footer-icon" />
             </motion.a>
