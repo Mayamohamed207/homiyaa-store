@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { ShoppingCart, Heart, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
@@ -133,6 +134,7 @@ const ProductPage = () => {
   const category = isRTL ? product.category_ar : product.category_en;
   const description = isRTL ? product.description_ar : product.description_en;
   const displayPrice = product.discount_price ?? product.price;
+  const plainDescription = (description || `${name} - Homiyaa`).slice(0, 155);
 
   const goNext = () => {
     if (images.length > 1) setActiveIdx(i => (i + 1) % images.length);
@@ -194,238 +196,270 @@ const ProductPage = () => {
   };
 
   return (
-    <div className="pp-page" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="pp-container">
-        <button className="pp-back-btn" onClick={() => navigate(-1)}>
-          <BackIcon size={18} />
-          {isRTL ? 'العودة' : 'Back'}
-        </button>
+    <>
+      <Helmet>
+        <title>{name} | Homiyaa</title>
+        <meta name="description" content={plainDescription} />
+        <link rel="canonical" href={`https://homyiaa.com/product/${product.id}`} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={`${name} | Homiyaa`} />
+        <meta property="og:description" content={plainDescription} />
+        <meta property="og:image" content={images.length > 0 ? images[0].image_url : ''} />
+        <meta property="og:url" content={`https://homyiaa.com/product/${product.id}`} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: name,
+            image: images.length > 0 ? images[0].image_url : '',
+            description: plainDescription,
+            sku: String(product.id),
+            offers: {
+              '@type': 'Offer',
+              priceCurrency: 'EGP',
+              price: displayPrice,
+              availability: product.is_sold_out
+                ? 'https://schema.org/OutOfStock'
+                : 'https://schema.org/InStock',
+              url: `https://homyiaa.com/product/${product.id}`,
+            },
+          })}
+        </script>
+      </Helmet>
 
-        <div className="pp-layout">
-          {/* Gallery */}
-          <div className="pp-gallery-col">
-            <div
-              className="pp-main-image-wrap"
-              onTouchStart={e => {
-                touchStartX.current = e.touches[0].clientX;
-                touchStartY.current = e.touches[0].clientY;
-              }}
-              onTouchEnd={e => {
-                const dx = e.changedTouches[0].clientX - touchStartX.current;
-                const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-                if (Math.abs(dx) > 40 && dy < 60) {
-                  dx < 0
-                    ? isRTL ? goPrev() : goNext()
-                    : isRTL ? goNext() : goPrev();
-                }
-              }}
-            >
-              <motion.img
-                key={activeIdx}
-                src={currentImage}
-                alt={name}
-                className="pp-main-image"
-                initial={{ opacity: 0, scale: 1.03 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.25 }}
-                draggable={false}
-              />
+      <div className="pp-page" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="pp-container">
+          <button className="pp-back-btn" onClick={() => navigate(-1)}>
+            <BackIcon size={18} />
+            {isRTL ? 'العودة' : 'Back'}
+          </button>
 
-              <div className="pp-img-badges">
-                {product.is_sold_out && (
-                  <span className="pp-badge pp-badge-sold">
-                    {isRTL ? 'نفذت الكمية' : 'Sold Out'}
-                  </span>
-                )}
-                {product.is_popular && !product.is_sold_out && (
-                  <span className="pp-badge pp-badge-pop">{isRTL ? 'شائع' : 'Popular'}</span>
-                )}
-              </div>
-
-              <button
-                className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
-                aria-label="Wishlist"
-                onClick={async () => {
-                  if (!user) {
-                    toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first');
-                    return;
-                  }
-                  if (wishlisted) {
-                    await supabase
-                      .from('wishlists')
-                      .delete()
-                      .match({ user_id: user.id, product_id: product.id });
-                    setWishlisted(false);
-                    toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
-                  } else {
-                    await supabase
-                      .from('wishlists')
-                      .insert({ user_id: user.id, product_id: product.id });
-                    setWishlisted(true);
-                    toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+          <div className="pp-layout">
+            {/* Gallery */}
+            <div className="pp-gallery-col">
+              <div
+                className="pp-main-image-wrap"
+                onTouchStart={e => {
+                  touchStartX.current = e.touches[0].clientX;
+                  touchStartY.current = e.touches[0].clientY;
+                }}
+                onTouchEnd={e => {
+                  const dx = e.changedTouches[0].clientX - touchStartX.current;
+                  const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+                  if (Math.abs(dx) > 40 && dy < 60) {
+                    dx < 0
+                      ? isRTL ? goPrev() : goNext()
+                      : isRTL ? goNext() : goPrev();
                   }
                 }}
               >
-                <Heart
-                  size={18}
-                  fill={wishlisted ? '#ef4444' : 'none'}
-                  color={wishlisted ? '#ef4444' : 'currentColor'}
+                <motion.img
+                  key={activeIdx}
+                  src={currentImage}
+                  alt={name}
+                  className="pp-main-image"
+                  initial={{ opacity: 0, scale: 1.03 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.25 }}
+                  draggable={false}
                 />
-              </button>
+
+                <div className="pp-img-badges">
+                  {product.is_sold_out && (
+                    <span className="pp-badge pp-badge-sold">
+                      {isRTL ? 'نفذت الكمية' : 'Sold Out'}
+                    </span>
+                  )}
+                  {product.is_popular && !product.is_sold_out && (
+                    <span className="pp-badge pp-badge-pop">{isRTL ? 'شائع' : 'Popular'}</span>
+                  )}
+                </div>
+
+                <button
+                  className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
+                  aria-label="Wishlist"
+                  onClick={async () => {
+                    if (!user) {
+                      toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first');
+                      return;
+                    }
+                    if (wishlisted) {
+                      await supabase
+                        .from('wishlists')
+                        .delete()
+                        .match({ user_id: user.id, product_id: product.id });
+                      setWishlisted(false);
+                      toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
+                    } else {
+                      await supabase
+                        .from('wishlists')
+                        .insert({ user_id: user.id, product_id: product.id });
+                      setWishlisted(true);
+                      toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+                    }
+                  }}
+                >
+                  <Heart
+                    size={18}
+                    fill={wishlisted ? '#ef4444' : 'none'}
+                    color={wishlisted ? '#ef4444' : 'currentColor'}
+                  />
+                </button>
+
+                {images.length > 1 && (
+                  <>
+                    <button className="pp-arrow pp-arrow-prev" onClick={goPrev} aria-label="Previous">
+                      <PrevIcon size={20} />
+                    </button>
+                    <button className="pp-arrow pp-arrow-next" onClick={goNext} aria-label="Next">
+                      <NextIcon size={20} />
+                    </button>
+                    <div className="pp-dots">
+                      {images.map((_, i) => (
+                        <button
+                          key={i}
+                          className={`pp-dot ${i === activeIdx ? 'active' : ''}`}
+                          onClick={() => setActiveIdx(i)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {images.length > 1 && (
-                <>
-                  <button className="pp-arrow pp-arrow-prev" onClick={goPrev} aria-label="Previous">
-                    <PrevIcon size={20} />
-                  </button>
-                  <button className="pp-arrow pp-arrow-next" onClick={goNext} aria-label="Next">
-                    <NextIcon size={20} />
-                  </button>
-                  <div className="pp-dots">
-                    {images.map((_, i) => (
-                      <button
-                        key={i}
-                        className={`pp-dot ${i === activeIdx ? 'active' : ''}`}
-                        onClick={() => setActiveIdx(i)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {images.length > 1 && (
-              <div className="pp-thumb-strip">
-                {images.map((img, i) => (
-                  <button
-                    key={i}
-                    className={`pp-thumb ${i === activeIdx ? 'active' : ''}`}
-                    onClick={() => setActiveIdx(i)}
-                  >
-                    <img src={img.image_url} alt="" draggable={false} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Details */}
-          <div className="pp-details-col">
-            <p className="pp-cat-tag">{category}</p>
-            <h1 className="pp-title">{name}</h1>
-
-            <div className="pp-price-row">
-              <span className="pp-price">{displayPrice} EGP</span>
-              {product.discount_price && (
-                <span className="pp-old-price">{product.price} EGP</span>
-              )}
-              {product.discount_price && (
-                <span className="pp-savings-tag">
-                  {Math.round(((product.price - product.discount_price) / product.price) * 100)}%{' '}
-                  {isRTL ? 'خصم' : 'OFF'}
-                </span>
-              )}
-            </div>
-
-            {!product.is_sold_out && (
-              <p className="pp-stock-note">
-                {product.stock_quantity <= 5
-                  ? `⚡ ${isRTL ? 'متبقي' : 'Only'} ${product.stock_quantity} ${isRTL ? 'قطع فقط' : 'left in stock'}`
-                  : `✓ ${isRTL ? 'متوفر في المخزون' : 'In stock'}`}
-              </p>
-            )}
-
-            <hr className="pp-divider" />
-
-            {/* Color selector */}
-            {colors.length > 0 && (
-              <div className="pp-colors-section">
-                <p className="pp-section-label">
-                  {isRTL ? 'اختر اللون / الشكل' : 'Select Color/Shape'}
-                  {selectedColor !== null && (
-                    <span className="pp-selected-color-name">
-                      {': '}
-                      {isRTL
-                        ? colors[selectedColor].color_name_ar
-                        : colors[selectedColor].color_name_en}
-                    </span>
-                  )}
-                </p>
-                <div className="pp-color-row">
-                  {colors.map((c, idx) => (
+                <div className="pp-thumb-strip">
+                  {images.map((img, i) => (
                     <button
-                      key={idx}
-                      className={`pp-color-dot ${selectedColor === idx ? 'selected' : ''}`}
-                      style={{ backgroundColor: c.color_code }}
-                      onClick={() => {
-                        const newIndex = selectedColor === idx ? null : idx;
-                        setSelectedColor(newIndex);
-                        if (newIndex !== null && images[newIndex + 1]) {
-                          setActiveIdx(newIndex + 1);
-                        } else {
-                          setActiveIdx(0);
-                        }
-                      }}
-                      title={isRTL ? c.color_name_ar : c.color_name_en}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Variant selector */}
-            {variants.length > 0 && (
-              <div className="pp-variants-section">
-                <p className="pp-section-label">
-                  {isRTL ? 'اختر الخيار' : 'Select Option'}
-                  {selectedVariant !== null && (
-                    <span className="pp-selected-color-name">
-                      {': '}
-                      {isRTL
-                        ? variants[selectedVariant].variant_name_ar
-                        : variants[selectedVariant].variant_name_en}
-                    </span>
-                  )}
-                </p>
-                <div className="pp-variant-row">
-                  {variants.map((v, idx) => (
-                    <button
-                      key={idx}
-                      className={`pp-variant-pill ${selectedVariant === idx ? 'selected' : ''}`}
-                      onClick={() => setSelectedVariant(selectedVariant === idx ? null : idx)}
+                      key={i}
+                      className={`pp-thumb ${i === activeIdx ? 'active' : ''}`}
+                      onClick={() => setActiveIdx(i)}
                     >
-                      {isRTL ? v.variant_name_ar : v.variant_name_en}
+                      <img src={img.image_url} alt="" draggable={false} />
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {description && (
-              <div className="pp-desc-section">
-                <p className="pp-section-label">
-                  {isRTL ? 'تفاصيل المنتج' : 'Product Details'}
+            {/* Details */}
+            <div className="pp-details-col">
+              <p className="pp-cat-tag">{category}</p>
+              <h1 className="pp-title">{name}</h1>
+
+              <div className="pp-price-row">
+                <span className="pp-price">{displayPrice} EGP</span>
+                {product.discount_price && (
+                  <span className="pp-old-price">{product.price} EGP</span>
+                )}
+                {product.discount_price && (
+                  <span className="pp-savings-tag">
+                    {Math.round(((product.price - product.discount_price) / product.price) * 100)}%{' '}
+                    {isRTL ? 'خصم' : 'OFF'}
+                  </span>
+                )}
+              </div>
+
+              {!product.is_sold_out && (
+                <p className="pp-stock-note">
+                  {product.stock_quantity <= 5
+                    ? `⚡ ${isRTL ? 'متبقي' : 'Only'} ${product.stock_quantity} ${isRTL ? 'قطع فقط' : 'left in stock'}`
+                    : `✓ ${isRTL ? 'متوفر في المخزون' : 'In stock'}`}
                 </p>
-                <p className="pp-desc-text">{description}</p>
-              </div>
-            )}
+              )}
 
-            <div className="pp-cta-wrapper">
-              <button
-                className={`pp-add-btn ${product.is_sold_out ? 'disabled' : ''}`}
-                disabled={product.is_sold_out}
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart size={20} />
-                {product.is_sold_out
-                  ? isRTL ? 'نفذت الكمية' : 'Out of Stock'
-                  : isRTL ? 'أضف إلى السلة' : 'Add to Cart'}
-              </button>
+              <hr className="pp-divider" />
+
+              {/* Color selector */}
+              {colors.length > 0 && (
+                <div className="pp-colors-section">
+                  <p className="pp-section-label">
+                    {isRTL ? 'اختر اللون / الشكل' : 'Select Color/Shape'}
+                    {selectedColor !== null && (
+                      <span className="pp-selected-color-name">
+                        {': '}
+                        {isRTL
+                          ? colors[selectedColor].color_name_ar
+                          : colors[selectedColor].color_name_en}
+                      </span>
+                    )}
+                  </p>
+                  <div className="pp-color-row">
+                    {colors.map((c, idx) => (
+                      <button
+                        key={idx}
+                        className={`pp-color-dot ${selectedColor === idx ? 'selected' : ''}`}
+                        style={{ backgroundColor: c.color_code }}
+                        onClick={() => {
+                          const newIndex = selectedColor === idx ? null : idx;
+                          setSelectedColor(newIndex);
+                          if (newIndex !== null && images[newIndex + 1]) {
+                            setActiveIdx(newIndex + 1);
+                          } else {
+                            setActiveIdx(0);
+                          }
+                        }}
+                        title={isRTL ? c.color_name_ar : c.color_name_en}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Variant selector */}
+              {variants.length > 0 && (
+                <div className="pp-variants-section">
+                  <p className="pp-section-label">
+                    {isRTL ? 'اختر الخيار' : 'Select Option'}
+                    {selectedVariant !== null && (
+                      <span className="pp-selected-color-name">
+                        {': '}
+                        {isRTL
+                          ? variants[selectedVariant].variant_name_ar
+                          : variants[selectedVariant].variant_name_en}
+                      </span>
+                    )}
+                  </p>
+                  <div className="pp-variant-row">
+                    {variants.map((v, idx) => (
+                      <button
+                        key={idx}
+                        className={`pp-variant-pill ${selectedVariant === idx ? 'selected' : ''}`}
+                        onClick={() => setSelectedVariant(selectedVariant === idx ? null : idx)}
+                      >
+                        {isRTL ? v.variant_name_ar : v.variant_name_en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {description && (
+                <div className="pp-desc-section">
+                  <p className="pp-section-label">
+                    {isRTL ? 'تفاصيل المنتج' : 'Product Details'}
+                  </p>
+                  <p className="pp-desc-text">{description}</p>
+                </div>
+              )}
+
+              <div className="pp-cta-wrapper">
+                <button
+                  className={`pp-add-btn ${product.is_sold_out ? 'disabled' : ''}`}
+                  disabled={product.is_sold_out}
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart size={20} />
+                  {product.is_sold_out
+                    ? isRTL ? 'نفذت الكمية' : 'Out of Stock'
+                    : isRTL ? 'أضف إلى السلة' : 'Add to Cart'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
