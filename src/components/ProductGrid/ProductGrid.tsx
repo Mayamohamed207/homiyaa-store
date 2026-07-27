@@ -79,10 +79,17 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     return () => window.removeEventListener('storeCategoriesUpdated', handleCategoriesUpdated);
   }, [loadStoreProducts, loadStoreCategories]);
 
-  const handleCategorySelect = (value: string) => {
-    setSelectedCategory(value);
-    window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
-  };
+ const handleCategorySelect = (value: string) => {
+  setSelectedCategory(value);
+  window.dispatchEvent(new CustomEvent('storeCategoryChanged', { detail: value }));
+
+  const productsSection = document.getElementById('shop') || document.getElementById('products') || document.getElementById('products-section');
+  if (productsSection) {
+    productsSection.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    window.scrollTo({ top: 500, behavior: 'smooth' });
+  }
+};
 
   const handleAddToCartMapping = (
     item: Product,
