@@ -7,6 +7,7 @@ import ProductGrid from './components/ProductGrid/ProductGrid';
 import ProductPage from './pages/ProductPage/ProductPage';
 import AuthModal from './components/AuthModal/AuthModal';
 import Footer from './components/Footer/Footer';
+import TrustBadges from './components/TrustBadges/TrustBadges';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AccountPage from './pages/AccountPage/AccountPage';
 import './App.css';
@@ -76,6 +77,7 @@ function App() {
           <Route path="/account" element={<AccountPage />} />
         </Routes>
 
+        <TrustBadges />
         <Footer />
       </div>
     </BrowserRouter>

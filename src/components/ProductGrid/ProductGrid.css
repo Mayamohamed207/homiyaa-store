@@ -1,6 +1,6 @@
 /* ── Section ── */
 .product-grid-section {
-  padding: 1.5rem 0 5rem;
+  padding: rem 0 2rem;
   background-color: var(--primary-50, #fbf8f3);
 }
 

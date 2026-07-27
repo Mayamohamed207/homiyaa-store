@@ -1,0 +1,157 @@
+.trust-badges {
+  background: linear-gradient(to bottom, #fcfbf9, var(--warm-50, #fbf9f7));
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+.trust-badges-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Matches .section-title exactly: same size, weight, color, no forced alignment */
+.trust-badges-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-900, #3b2314);
+  margin: 0 0 1rem;
+  line-height: 1;
+}
+
+.trust-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.trust-badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+
+.trust-badge-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(80, 52, 36, 0.05));
+  margin-bottom: 0.65rem;
+}
+
+.trust-badge-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+/* Brand-color variants — same tinted-circle pattern as the reference,
+   built from your palette instead of generic blue/green/orange */
+.icon-truck {
+  background: var(--primary-100, #f4ece6);
+  color: var(--primary-600, #81563b);
+}
+
+.icon-cash {
+  background: var(--secondary-200, #f5eedf);
+  color: var(--primary-700, #66432e);
+}
+
+.icon-returns {
+  background: var(--primary-50, #fbf9f7);
+  border: 1px solid var(--primary-200, #e5d4c7);
+  color: var(--primary-800, #503424);
+}
+
+.trust-badge-item-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-900, #3b2314);
+  margin: 0 0 0.2rem;
+  line-height: 1.3;
+}
+
+.trust-badge-item-subtitle {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--primary-600, #81563b);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.trust-badges-note {
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary-800, #503424);
+  max-width: 560px;
+  margin: 1.5rem auto 0;
+  line-height: 1.6;
+}
+
+/* ── Tablet ── */
+@media (min-width: 480px) {
+  .trust-badge-icon-wrapper {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .trust-badge-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+
+  .trust-badge-item-title {
+    font-size: 0.85rem;
+  }
+
+  .trust-badge-item-subtitle {
+    font-size: 0.72rem;
+  }
+}
+
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  .trust-badges {
+    padding: 2rem 2rem 3.5rem;
+  }
+
+  .trust-badges-grid {
+    gap: 2rem;
+  }
+
+  .trust-badge-item {
+    padding: 1.25rem;
+  }
+
+  .trust-badge-icon-wrapper {
+    width: 4.25rem;
+    height: 4.25rem;
+  }
+
+  .trust-badge-icon {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .trust-badge-item-title {
+    font-size: 0.95rem;
+  }
+
+  .trust-badge-item-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .trust-badges-note {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .trust-badges-grid {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
