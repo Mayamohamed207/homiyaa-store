@@ -406,7 +406,6 @@ html[dir="rtl"] .mobile-strip-search-input { direction: rtl; }
   .navbar-logo-container { gap: 0.4rem; }
   .navbar-logo-img { height: 2.1rem; width: 2.1rem; }
   .navbar-logo { font-size: 1.05rem; }
-  .slogan { display: none !important; }
   .navbar-actions { gap: 0.1rem; }
   .navbar-icon-btn { padding: 0.35rem; }
   .navbar-icon-btn .icon { width: 1.25rem; height: 1.25rem; }
