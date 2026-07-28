@@ -210,8 +210,8 @@ const Hero = () => {
           className="hero-subtitle"
         >
           {t(
-            'Premium kitchen & home tool, for warmth and beauty.',
-            'أدوات منزلية لوازم مطبخ راقية — مصنوعة لدفء حياتك اليومية.'
+            'Home essentials, kitchenware, and carefully choosen gifts specially for you.',
+            'مستلمزات منزلية و ادوات مطبخ و هداية مختارة بعناية و جودة تدوم'
           )}
         </motion.p>
         <motion.div
