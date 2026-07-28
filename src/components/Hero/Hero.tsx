@@ -210,9 +210,8 @@ const Hero = () => {
           className="hero-subtitle"
         >
           {t(
-            'Home essentials, kitchenware, and carefully choosen gifts specially for you.',
-            'مستلمزات منزلية و ادوات مطبخ و هداية مختارة بعناية و جودة تدوم'
-          )}
+            'Home essentials, kitchenware, and gifts, chosen with care for quality that lasts.',
+            'مستلزمات منزلية وأدوات مطبخ وهدايا، مختارة بعناية وجودة تدوم'          )}
         </motion.p>
         <motion.div
           className="hero-actions"
