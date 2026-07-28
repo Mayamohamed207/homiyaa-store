@@ -397,7 +397,7 @@ html[dir="rtl"] .mobile-strip-search-input { direction: rtl; }
 .mobile-strip-clear-btn:hover { color: var(--primary-700); }
 
 /* ── Mobile ── */
-@media (max-width: 767px) {
+@media (max-width: 599px) {
   .navbar-inner {
     padding: 0 0.5rem;
   }
@@ -437,7 +437,7 @@ html[dir="rtl"] .mobile-strip-search-input { direction: rtl; }
 }
 
 /* ── Desktop ── */
-@media (min-width: 768px) {
+@media (min-width: 600px) {
   .navbar-logo-img { height: 2.85rem; width: 2.85rem; }
   .navbar-logo { font-size: 1.45rem; }
   .slogan { font-size: 0.65rem; }
