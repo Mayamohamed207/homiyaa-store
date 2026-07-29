@@ -135,10 +135,10 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
   // ── Fetchers ──
 
-  const fetchProducts = async () => {
+const fetchProducts = async () => {
     const { data } = await supabase
       .from('products')
-      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar, image_index)')
+      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar, image_index), product_variants(id, variant_name_en, variant_name_ar, price, display_order)')
       .order('id', { ascending: false });
     if (data) setProducts(data as Product[]);
   };

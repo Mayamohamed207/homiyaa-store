@@ -29,6 +29,9 @@ const AdminProductCard = ({
   const [isNewArrival, setIsNewArrival] = useState(p.is_new_arrival ?? false);
   const [isSavingFlags, setIsSavingFlags] = useState(false);
 
+  // NEW: which variant is currently selected (like chosenColorIndex on the storefront card)
+  const [selectedVariantIdx, setSelectedVariantIdx] = useState<number | null>(null);
+
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
@@ -38,6 +41,7 @@ const AdminProductCard = ({
     setIsPopular(p.is_popular ?? false);
     setIsSoldOut(p.is_sold_out ?? false);
     setIsNewArrival(p.is_new_arrival ?? false);
+    setSelectedVariantIdx(p.product_variants && p.product_variants.length > 0 ? 0 : null);
   }, [p]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -105,6 +109,14 @@ const AdminProductCard = ({
       ? images[activeImgIndex].image_url
       : defaultImage;
 
+  // NEW: resolve which price to actually show — variant price if one is selected & has a price, else base/discount price
+  const variants = p.product_variants || [];
+  const selectedVariant =
+    selectedVariantIdx !== null && variants[selectedVariantIdx] ? variants[selectedVariantIdx] : null;
+  const hasVariantPrice = selectedVariant?.price !== null && selectedVariant?.price !== undefined;
+  const displayPrice = hasVariantPrice ? (selectedVariant!.price as number) : (p.discount_price ?? p.price);
+  const showOldPrice = !hasVariantPrice && !!p.discount_price;
+
   return (
     <div
       className="admin-product-card"
@@ -140,65 +152,78 @@ const AdminProductCard = ({
       </div>
 
       {/* ── Info + Flag Panel ── */}
-<div className="admin-card-body-row" dir={isRtl ? 'rtl' : 'ltr'}>
-  <div className="admin-card-content">
-    <div className="admin-card-header">
-      <span className="admin-cat">{t(p.category_en, p.category_ar)}</span>
-      <span className={`admin-stock ${p.stock_quantity === 0 ? 'empty' : ''}`}>
-        {t('Stock', 'مخزون')}: {p.stock_quantity}
-      </span>
-    </div>
+      <div className="admin-card-body-row" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="admin-card-content">
+          <div className="admin-card-header">
+            <span className="admin-cat">{t(p.category_en, p.category_ar)}</span>
+            <span className={`admin-stock ${p.stock_quantity === 0 ? 'empty' : ''}`}>
+              {t('Stock', 'مخزون')}: {p.stock_quantity}
+            </span>
+          </div>
 
-    <h4 className="admin-title">{p.name_en}</h4>
-    <h4 className="admin-title-ar">{p.name_ar}</h4>
+          <h4 className="admin-title">{p.name_en}</h4>
+          <h4 className="admin-title-ar">{p.name_ar}</h4>
 
-    {p.product_colors && p.product_colors.length > 0 && (
-      <div style={{ display: 'flex', gap: '0.35rem', margin: '0.4rem 0' }}>
-        {p.product_colors.map((color: any, idx: number) => {
-          // Resolve which image this swatch should jump to:
-          //  -1        -> this color was explicitly marked as having no photo (do nothing)
-          //  0..N       -> an explicit photo was picked for this color, always honor it
-          //  null/undef -> older product saved before this feature existed; keep the exact
-          //                original "color N -> image N+1" behavior so nothing breaks
-          const explicitIdx = color.image_index;
-          let targetIdx: number | null = null;
-          if (explicitIdx === -1) {
-            targetIdx = null;
-          } else if (typeof explicitIdx === 'number' && images[explicitIdx]) {
-            targetIdx = explicitIdx;
-          } else if (images[idx + 1]) {
-            targetIdx = idx + 1;
-          }
+          {p.product_colors && p.product_colors.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.35rem', margin: '0.4rem 0' }}>
+              {p.product_colors.map((color: any, idx: number) => {
+                const explicitIdx = color.image_index;
+                let targetIdx: number | null = null;
+                if (explicitIdx === -1) {
+                  targetIdx = null;
+                } else if (typeof explicitIdx === 'number' && images[explicitIdx]) {
+                  targetIdx = explicitIdx;
+                } else if (images[idx + 1]) {
+                  targetIdx = idx + 1;
+                }
 
-          return (
-            <span
-              key={idx}
-              style={{
-                width: 14, height: 14, borderRadius: '50%',
-                backgroundColor: color.color_code,
-                border: '1px solid #cbd5e1', cursor: targetIdx !== null ? 'pointer' : 'default',
-                outline: targetIdx !== null && activeImgIndex === targetIdx ? '2px solid #0f172a' : 'none',
-                outlineOffset: 2,
-              }}
-              title={`${color.color_name_en} / ${color.color_name_ar}`}
-              onClick={() => { if (targetIdx !== null) setActiveImgIndex(targetIdx); }}
-            />
-          );
-        })}
-      </div>
-    )}
-  </div>
+                return (
+                  <span
+                    key={idx}
+                    style={{
+                      width: 14, height: 14, borderRadius: '50%',
+                      backgroundColor: color.color_code,
+                      border: '1px solid #cbd5e1', cursor: targetIdx !== null ? 'pointer' : 'default',
+                      outline: targetIdx !== null && activeImgIndex === targetIdx ? '2px solid #0f172a' : 'none',
+                      outlineOffset: 2,
+                    }}
+                    title={`${color.color_name_en} / ${color.color_name_ar}`}
+                    onClick={() => { if (targetIdx !== null) setActiveImgIndex(targetIdx); }}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Variant pills — click to select, like colors. Price is NOT shown inline here. */}
+          {variants.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', margin: '0.3rem 0' }}>
+              {variants.map((variant: any, idx: number) => (
+                <span
+                  key={idx}
+                  onClick={() => setSelectedVariantIdx(prev => (prev === idx ? null : idx))}
+                  style={{
+                    fontSize: '0.7rem',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    border: selectedVariantIdx === idx ? '1px solid #0f172a' : '1px solid #cbd5e1',
+                    background: selectedVariantIdx === idx ? '#0f172a' : '#f1f5f9',
+                    color: selectedVariantIdx === idx ? '#ffffff' : '#334155',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t(variant.variant_name_en, variant.variant_name_ar)}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="admin-bottom-row">
           <div className="admin-price-row">
-            {p.discount_price ? (
-              <>
-                <span className="admin-price">{p.discount_price} {t('EGP', 'ج.م')}</span>
-                <span className="admin-discount">{p.price} {t('EGP', 'ج.م')}</span>
-              </>
-            ) : (
-              <span className="admin-price">{p.price} {t('EGP', 'ج.م')}</span>
-            )}
+            <span className="admin-price">{displayPrice} {t('EGP', 'ج.م')}</span>
+            {showOldPrice && <span className="admin-discount">{p.price} {t('EGP', 'ج.م')}</span>}
           </div>
 
           <div className="admin-flag-panel">
