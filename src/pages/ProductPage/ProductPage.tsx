@@ -20,6 +20,7 @@ interface ProductVariant {
   id: number;
   variant_name_en: string;
   variant_name_ar: string;
+  price?: number | null;
   display_order: number;
 }
 
@@ -84,7 +85,7 @@ const ProductPage = () => {
       const { data, error } = await supabase
         .from('products')
         .select(
-          '*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, display_order)'
+          '*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, price, display_order)'
         )
         .eq('id', id)
         .single();
@@ -97,6 +98,10 @@ const ProductPage = () => {
           );
         }
         setProduct(data);
+        // Default to the first variant so its price shows immediately
+        setSelectedVariant(data.product_variants && data.product_variants.length > 0 ? 0 : null);
+        setSelectedColor(null);
+        setActiveIdx(0);
       }
       setLoading(false);
     };
@@ -133,8 +138,15 @@ const ProductPage = () => {
   const name = isRTL ? product.name_ar : product.name_en;
   const category = isRTL ? product.category_ar : product.category_en;
   const description = isRTL ? product.description_ar : product.description_en;
-  const displayPrice = product.discount_price ?? product.price;
   const plainDescription = (description || `${name} - Homiyaa`).slice(0, 155);
+
+  const activeVariant =
+    variants.length > 0 && selectedVariant !== null ? variants[selectedVariant] : null;
+  const hasVariantPrice = activeVariant?.price !== null && activeVariant?.price !== undefined;
+  const displayPrice = hasVariantPrice
+    ? (activeVariant!.price as number)
+    : product.discount_price ?? product.price;
+  const showOldPrice = !hasVariantPrice && !!product.discount_price;
 
   const goNext = () => {
     if (images.length > 1) setActiveIdx(i => (i + 1) % images.length);
@@ -349,12 +361,12 @@ const ProductPage = () => {
 
               <div className="pp-price-row">
                 <span className="pp-price">{displayPrice} EGP</span>
-                {product.discount_price && (
+                {showOldPrice && (
                   <span className="pp-old-price">{product.price} EGP</span>
                 )}
-                {product.discount_price && (
+                {showOldPrice && (
                   <span className="pp-savings-tag">
-                    {Math.round(((product.price - product.discount_price) / product.price) * 100)}%{' '}
+                    {Math.round(((product.price - (product.discount_price as number)) / product.price) * 100)}%{' '}
                     {isRTL ? 'خصم' : 'OFF'}
                   </span>
                 )}
@@ -425,7 +437,7 @@ const ProductPage = () => {
                       <button
                         key={idx}
                         className={`pp-variant-pill ${selectedVariant === idx ? 'selected' : ''}`}
-                        onClick={() => setSelectedVariant(selectedVariant === idx ? null : idx)}
+                        onClick={() => setSelectedVariant(idx)}
                       >
                         {isRTL ? v.variant_name_ar : v.variant_name_en}
                       </button>

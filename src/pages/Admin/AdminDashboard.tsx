@@ -38,11 +38,11 @@ interface ColorInput {
   color_code: string;
 }
 
-// New: variant input (e.g. "6-piece set", "4-piece set")
 interface VariantInput {
   id: string;
   variant_name_en: string;
   variant_name_ar: string;
+  price: number | '';
 }
 
 interface UnifiedImage {
@@ -50,7 +50,7 @@ interface UnifiedImage {
   type: 'existing' | 'new';
   url: string;
   file?: File;
-}
+} 
 
 type SortOption = 'latest' | 'price-asc' | 'price-desc' | 'low-stock';
 type ActiveTabOption = 'products' | 'orders' | 'shipping' | 'categories' | 'usage';
@@ -75,6 +75,7 @@ const emptyVariant = (): VariantInput => ({
   id: `v-${Date.now()}-${Math.random()}`,
   variant_name_en: '',
   variant_name_ar: '',
+  price: '',
 });
 
 const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: string }) => {
@@ -202,8 +203,14 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     });
   };
 
-  const handleVariantChange = (id: string, field: keyof Omit<VariantInput, 'id'>, value: string) => {
-    setVariants(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
+ const handleVariantChange = (id: string, field: keyof Omit<VariantInput, 'id'>, value: string) => {
+    setVariants(prev => prev.map(v => {
+      if (v.id !== id) return v;
+      if (field === 'price') {
+        return { ...v, price: value === '' ? '' : Number(value) };
+      }
+      return { ...v, [field]: value };
+    }));
   };
 
   // ── Form payload ──
@@ -295,8 +302,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
         if (colorError) throw new Error(`Colors save failed: ${colorError.message}`);
       }
 
-      // ── Variants ──
-      const activeVariants = variants.filter(
+   const activeVariants = variants.filter(
         v => v.variant_name_en.trim() !== '' || v.variant_name_ar.trim() !== ''
       );
       if (activeVariants.length > 0) {
@@ -304,6 +310,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           product_id: productId,
           variant_name_en: v.variant_name_en.trim(),
           variant_name_ar: v.variant_name_ar.trim(),
+          price: v.price === '' ? null : Number(v.price),
           display_order: idx,
         }));
         const { error: variantError } = await supabase.from('product_variants').insert(variantRows);
@@ -387,7 +394,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       .eq('product_id', product.id)
       .order('display_order', { ascending: true });
 
-    if (variantFetchError) {
+   if (variantFetchError) {
       toast.error('Failed to load variants');
       setVariants([emptyVariant()]);
     } else if (fetchedVariants && fetchedVariants.length > 0) {
@@ -396,12 +403,12 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           id: `v-existing-${i}-${Math.random()}`,
           variant_name_en: v.variant_name_en,
           variant_name_ar: v.variant_name_ar,
+          price: v.price ?? '',
         }))
       );
     } else {
       setVariants([emptyVariant()]);
     }
-
     setIsFormOpen(true);
   };
 
@@ -551,7 +558,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
           </div>
 
           <div className="form-grid">
-            {/* Names */}
+            {/* Names — kept single-language since each input IS a specific language field */}
             <div className="field">
               <label>Product Name (EN)</label>
               <input
@@ -573,7 +580,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             {/* Category */}
             <div className="field full-width">
-              <label>Select Category</label>
+              <label>{t('Select Category', 'اختر القسم')}</label>
               <select
                 className="admin-dropdown"
                 required
@@ -587,7 +594,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                   });
                 }}
               >
-                <option value="" disabled>Choose Category Option...</option>
+                <option value="" disabled>{t('Choose Category Option...', 'اختر قسم...')}</option>
                 {dbLiveCategories.map(cat => (
                   <option key={cat.id} value={cat.name_en}>
                     {cat.name_en} / {cat.name_ar}
@@ -598,7 +605,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             {/* Pricing */}
             <div className="field">
-              <label>Price (EGP)</label>
+              <label>{t('Price (EGP)', 'السعر (ج.م)')}</label>
               <input
                 type="number"
                 step="1"
@@ -610,7 +617,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               />
             </div>
             <div className="field">
-              <label>Price After Discount</label>
+              <label>{t('Price After Discount', 'السعر بعد الخصم')}</label>
               <input
                 type="number"
                 step="1"
@@ -624,7 +631,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               />
             </div>
             <div className="field full-width">
-              <label>Stock Count</label>
+              <label>{t('Stock Count', 'الكمية بالمخزون')}</label>
               <input
                 type="number"
                 step="1"
@@ -639,7 +646,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               />
             </div>
 
-            {/* Descriptions */}
+            {/* Descriptions — kept single-language since each input IS a specific language field */}
             <div className="field full-width">
               <label>Description (EN)</label>
               <textarea
@@ -657,7 +664,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             {/* ── Images ── */}
             <div className="field full-width section-block">
-              <span className="section-title"><Image size={16} /> Asset Media Manager</span>
+              <span className="section-title"><Image size={16} /> {t('Asset Media Manager', 'إدارة صور المنتج')}</span>
               <input type="file" multiple accept="image/*" onChange={handleFileChange} />
               <ReactSortable
                 list={formImages}
@@ -679,7 +686,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                     >
                       <X size={12} />
                     </button>
-                    <span className="image-order-badge">Slot {idx + 1}</span>
+                    <span className="image-order-badge">{t('Slot', 'الصورة')} {idx + 1}</span>
                   </div>
                 ))}
               </ReactSortable>
@@ -687,9 +694,9 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
             {/* ── Colors ── */}
             <div className="field full-width section-block">
-              <span className="section-title"><Palette size={16} /> Available Product Colors</span>
+              <span className="section-title"><Palette size={16} /> {t('Available Product Colors', 'ألوان المنتج المتاحة')}</span>
               <p style={{ fontSize: '0.78rem', color: 'var(--primary-500)', marginBottom: '0.5rem' }}>
-                Leave all rows blank if this product has no color options.
+                {t('Leave all rows blank if this product has no color options.', 'اتركي كل الصفوف فاضية لو المنتج مفيهوش ألوان.')}
               </p>
               <ReactSortable list={colors} setList={setColors} handle=".color-drag-handle">
                 {colors.map(color => (
@@ -700,13 +707,13 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                     <div className="color-text-inputs-inputs-wrapper">
                       <input
                         type="text"
-                        placeholder="English Label"
+                        placeholder={t('English Label', 'الاسم بالإنجليزي')}
                         value={color.color_name_en}
                         onChange={e => handleColorChange(color.id, 'color_name_en', e.target.value)}
                       />
                       <input
                         type="text"
-                        placeholder="اسم اللون بالعربي"
+                        placeholder={t('Arabic Label', 'اسم اللون بالعربي')}
                         value={color.color_name_ar}
                         onChange={e => handleColorChange(color.id, 'color_name_ar', e.target.value)}
                       />
@@ -743,15 +750,18 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 className="add-color-btn"
                 style={{ marginTop: '0.5rem' }}
               >
-                + Add Color Row
+                + {t('Add Color Row', 'إضافة لون جديد')}
               </button>
             </div>
 
-            {/* ── Variants (new) ── */}
+            {/* ── Variants (with per-option price) ── */}
             <div className="field full-width section-block">
-              <span className="section-title"><Tag size={16} /> Product Variants / Options</span>
+              <span className="section-title"><Tag size={16} /> {t('Product Variants / Options', 'خيارات المنتج')}</span>
               <p style={{ fontSize: '0.78rem', color: 'var(--primary-500)', marginBottom: '0.5rem' }}>
-                Use for sets, piece counts, shapes ..etc
+                {t(
+                  'Use for sets, piece counts, shapes ..etc.',
+                  'استخدمها للأطقم أو عدد القطع أو الأشكال.'
+                )}
               </p>
               <ReactSortable list={variants} setList={setVariants} handle=".variant-drag-handle">
                 {variants.map(variant => (
@@ -762,15 +772,22 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                     <div className="color-text-inputs-inputs-wrapper">
                       <input
                         type="text"
-                        placeholder="Option label (EN) "
+                        placeholder={t('Option label (EN)', 'اسم الخيار بالإنجليزي')}
                         value={variant.variant_name_en}
                         onChange={e => handleVariantChange(variant.id, 'variant_name_en', e.target.value)}
                       />
                       <input
                         type="text"
-                        placeholder="اسم الخيار بالعربي"
+                        placeholder={t('Option label (AR)', 'اسم الخيار بالعربي')}
                         value={variant.variant_name_ar}
                         onChange={e => handleVariantChange(variant.id, 'variant_name_ar', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        step="1"
+                        placeholder={t('Price (EGP) — optional', 'السعر (ج.م) - اختياري')}
+                        value={variant.price}
+                        onChange={e => handleVariantChange(variant.id, 'price', e.target.value)}
                       />
                     </div>
                     <div className="color-picker-and-delete">
@@ -791,7 +808,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 className="add-color-btn"
                 style={{ marginTop: '0.5rem' }}
               >
-                + Add Variant Row
+                + {t('Add Variant Row', 'إضافة خيار جديد')}
               </button>
             </div>
 
@@ -803,7 +820,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 checked={formData.is_popular}
                 onChange={e => setFormData({ ...formData, is_popular: e.target.checked })}
               />
-              <label htmlFor="popular">Feature as Best Selling</label>
+              <label htmlFor="popular">{t('Feature as Best Selling', 'الأكثر مبيعًا')}</label>
             </div>
             <div className="checkbox-field">
               <input
@@ -812,7 +829,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 checked={formData.is_sold_out}
                 onChange={e => setFormData({ ...formData, is_sold_out: e.target.checked })}
               />
-              <label htmlFor="soldout">Out Of Stock</label>
+              <label htmlFor="soldout">{t('Out Of Stock', 'نفد المخزون')}</label>
             </div>
             <div className="checkbox-field">
               <input
@@ -821,7 +838,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                 checked={formData.is_new_arrival ?? false}
                 onChange={e => setFormData({ ...formData, is_new_arrival: e.target.checked })}
               />
-              <label htmlFor="new_arrival">New Arrival</label>
+              <label htmlFor="new_arrival">{t('New Arrival', 'وصل حديثاً')}</label>
             </div>
           </div>
 
@@ -838,7 +855,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
               className="save-submit-btn"
               disabled={isUploading}
             >
-              {isUploading ? 'Saving...' : t('Save Product', 'حفظ المنتج')}
+              {isUploading ? t('Saving...', 'جاري الحفظ...') : t('Save Product', 'حفظ المنتج')}
             </button>
           </div>
         </form>
@@ -846,5 +863,4 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
     </div>
   );
 };
-
 export default AdminDashboard;

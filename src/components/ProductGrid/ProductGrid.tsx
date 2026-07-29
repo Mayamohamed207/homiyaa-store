@@ -39,9 +39,9 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const loadStoreProducts = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('products')
-      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, display_order)')
-      .order('display_order', { ascending: true });
+    .from('products')
+    .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar), product_variants(id, variant_name_en, variant_name_ar, price, display_order)')
+    .order('display_order', { ascending: true });
     if (!error && data) setProducts(data);
     setLoading(false);
   }, []);
@@ -92,27 +92,31 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     }
   };
 
-  const handleAddToCartMapping = (
-    item: Product,
-    chosenColor: ProductColor,
-    chosenVariant?: ProductVariant | null
-  ) => {
-    const activePrice = item.discount_price ? item.discount_price : item.price;
-    const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
-    const dynamicMainImage = item.product_images?.[0]?.image_url || fallbackImage;
-    if (addToCart) {
-      addToCart({
-        id: item.id,
-        name_en: item.name_en,
-        name_ar: item.name_ar,
-        price: activePrice,
-        image: dynamicMainImage,
-        quantity: 1,
-        selected_color: chosenColor,
-        selected_variant: chosenVariant ?? null,
-      });
-    }
-  };
+ const handleAddToCartMapping = (
+  item: Product,
+  chosenColor: ProductColor,
+  chosenVariant?: ProductVariant | null
+) => {
+  const hasVariantPrice = chosenVariant?.price !== null && chosenVariant?.price !== undefined;
+  const activePrice = hasVariantPrice
+    ? (chosenVariant!.price as number)
+    : (item.discount_price ? item.discount_price : item.price);
+
+  const fallbackImage = 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80';
+  const dynamicMainImage = item.product_images?.[0]?.image_url || fallbackImage;
+  if (addToCart) {
+    addToCart({
+      id: item.id,
+      name_en: item.name_en,
+      name_ar: item.name_ar,
+      price: activePrice,
+      image: dynamicMainImage,
+      quantity: 1,
+      selected_color: chosenColor,
+      selected_variant: chosenVariant ?? null,
+    });
+  }
+};
 
   const uniqueCategories = useMemo(() => {
     return storeCategories.map(cat => ({

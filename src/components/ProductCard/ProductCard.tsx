@@ -20,6 +20,7 @@ export interface ProductVariant {
   id?: number;
   variant_name_en: string;
   variant_name_ar: string;
+  price?: number | null;
   display_order?: number;
 }
 
@@ -72,6 +73,17 @@ const ProductCard = ({
   const { user } = useAuth();
   const [wishlisted, setWishlisted] = useState(false);
 
+  const colors = product.product_colors || [];
+  const variants = product.product_variants || [];
+
+  // Default to the first variant so its price shows immediately
+  useEffect(() => {
+    setChosenVariantIndex(variants.length > 0 ? 0 : null);
+    setChosenColorIndex(null);
+    setActiveImgIndex(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -116,8 +128,6 @@ const ProductCard = ({
     images.length > 0 && images[activeImgIndex]
       ? images[activeImgIndex].image_url
       : FALLBACK_IMAGE;
-  const colors = product.product_colors || [];
-  const variants = product.product_variants || [];
 
   const handleCardRedirection = () => {
     if (!isAdminMode) navigate(`/product/${product.id}`);
@@ -166,6 +176,16 @@ const ProductCard = ({
       else setActiveImgIndex(i => (i - 1 + images.length) % images.length);
     }
   };
+
+  const selectedVariant =
+    variants.length > 0 && chosenVariantIndex !== null ? variants[chosenVariantIndex] : null;
+  const hasVariantPrice = selectedVariant?.price !== null && selectedVariant?.price !== undefined;
+  const displayPrice = hasVariantPrice
+    ? (selectedVariant!.price as number)
+    : product.discount_price
+    ? product.discount_price
+    : product.price;
+  const showOldPrice = !hasVariantPrice && !!product.discount_price;
 
   return (
     <Card
@@ -263,7 +283,7 @@ const ProductCard = ({
                 className={`product-variant-pill ${chosenVariantIndex === idx ? 'selected' : ''}`}
                 onClick={e => {
                   e.stopPropagation();
-                  setChosenVariantIndex(chosenVariantIndex === idx ? null : idx);
+                  setChosenVariantIndex(idx);
                 }}
               >
                 {language === 'ar' ? v.variant_name_ar : v.variant_name_en}
@@ -279,12 +299,8 @@ const ProductCard = ({
           {isAdminMode ? (
             <>
               <div className="product-price-stack">
-                <span className="product-price">
-                  {product.discount_price ? product.discount_price : product.price} EGP
-                </span>
-                {product.discount_price && (
-                  <span className="product-old-price">{product.price} EGP</span>
-                )}
+                <span className="product-price">{displayPrice} EGP</span>
+                {showOldPrice && <span className="product-old-price">{product.price} EGP</span>}
               </div>
               <div className="admin-actions-wrapper" onClick={e => e.stopPropagation()}>
                 <button
@@ -306,12 +322,8 @@ const ProductCard = ({
           ) : (
             <>
               <div className="product-price-stack">
-                <span className="product-price">
-                  {product.discount_price ? product.discount_price : product.price} EGP
-                </span>
-                {product.discount_price && (
-                  <span className="product-old-price">{product.price} EGP</span>
-                )}
+                <span className="product-price">{displayPrice} EGP</span>
+                {showOldPrice && <span className="product-old-price">{product.price} EGP</span>}
               </div>
               <div onClick={e => e.stopPropagation()}>
                 <Button
