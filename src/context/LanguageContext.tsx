@@ -13,8 +13,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Grab saved language preference, or default to English
-  const [language, setLanguage] = useState<Language>(() => {
-    return (localStorage.getItem('homiyaa_lang') as Language) || 'en';
+ const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('homiyaa_lang') as Language) || 'ar';
   });
 
   const isRtl = language === 'ar';
