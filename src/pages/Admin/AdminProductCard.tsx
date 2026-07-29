@@ -154,20 +154,37 @@ const AdminProductCard = ({
 
     {p.product_colors && p.product_colors.length > 0 && (
       <div style={{ display: 'flex', gap: '0.35rem', margin: '0.4rem 0' }}>
-        {p.product_colors.map((color, idx) => (
-          <span
-            key={idx}
-            style={{
-              width: 14, height: 14, borderRadius: '50%',
-              backgroundColor: color.color_code,
-              border: '1px solid #cbd5e1', cursor: 'pointer',
-              outline: activeImgIndex === idx + 1 ? '2px solid #0f172a' : 'none',
-              outlineOffset: 2,
-            }}
-            title={`${color.color_name_en} / ${color.color_name_ar}`}
-            onClick={() => { if (images[idx + 1]) setActiveImgIndex(idx + 1); }}
-          />
-        ))}
+        {p.product_colors.map((color: any, idx: number) => {
+          // Resolve which image this swatch should jump to:
+          //  -1        -> this color was explicitly marked as having no photo (do nothing)
+          //  0..N       -> an explicit photo was picked for this color, always honor it
+          //  null/undef -> older product saved before this feature existed; keep the exact
+          //                original "color N -> image N+1" behavior so nothing breaks
+          const explicitIdx = color.image_index;
+          let targetIdx: number | null = null;
+          if (explicitIdx === -1) {
+            targetIdx = null;
+          } else if (typeof explicitIdx === 'number' && images[explicitIdx]) {
+            targetIdx = explicitIdx;
+          } else if (images[idx + 1]) {
+            targetIdx = idx + 1;
+          }
+
+          return (
+            <span
+              key={idx}
+              style={{
+                width: 14, height: 14, borderRadius: '50%',
+                backgroundColor: color.color_code,
+                border: '1px solid #cbd5e1', cursor: targetIdx !== null ? 'pointer' : 'default',
+                outline: targetIdx !== null && activeImgIndex === targetIdx ? '2px solid #0f172a' : 'none',
+                outlineOffset: 2,
+              }}
+              title={`${color.color_name_en} / ${color.color_name_ar}`}
+              onClick={() => { if (targetIdx !== null) setActiveImgIndex(targetIdx); }}
+            />
+          );
+        })}
       </div>
     )}
   </div>

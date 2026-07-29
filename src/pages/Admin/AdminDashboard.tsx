@@ -36,6 +36,12 @@ interface ColorInput {
   color_name_en: string;
   color_name_ar: string;
   color_code: string;
+  // Which uploaded image (by its local UnifiedImage.id) this color should jump to when clicked.
+  // null      = not explicitly set -> falls back to the old "color N -> image N+1" behavior
+  //             so existing products keep working exactly as before, untouched.
+  // 'NONE'    = admin explicitly said "this color has no image of its own"
+  // a real id = explicitly linked to that image
+  linked_image_id?: string | null;
 }
 
 interface VariantInput {
@@ -69,6 +75,7 @@ const emptyColor = (): ColorInput => ({
   color_name_en: '',
   color_name_ar: '',
   color_code: '#000000',
+  linked_image_id: null,
 });
 
 const emptyVariant = (): VariantInput => ({
@@ -131,7 +138,7 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
   const fetchProducts = async () => {
     const { data } = await supabase
       .from('products')
-      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar)')
+      .select('*, product_images(image_url), product_colors(color_code, color_name_en, color_name_ar, image_index)')
       .order('id', { ascending: false });
     if (data) setProducts(data as Product[]);
   };
@@ -175,6 +182,8 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       });
       return prev.filter(img => img.id !== idToRemove);
     });
+    // Any color that was explicitly linked to this image goes back to "not set" (auto)
+    setColors(prev => prev.map(c => c.linked_image_id === idToRemove ? { ...c, linked_image_id: null } : c));
   };
 
   // ── Color handlers ──
@@ -190,6 +199,10 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
 
   const handleColorChange = (id: string, field: keyof Omit<ColorInput, 'id'>, value: string) => {
     setColors(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  const handleColorImageLink = (colorId: string, imageId: string | null) => {
+    setColors(prev => prev.map(c => c.id === colorId ? { ...c, linked_image_id: imageId } : c));
   };
 
   // ── Variant handlers ──
@@ -260,9 +273,13 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       // ── Images ──
       await supabase.from('product_images').delete().eq('product_id', productId);
       const finalImageRows = [];
+      // Maps each UnifiedImage's local session id -> the final position it ends up saved at,
+      // so we can resolve each color's "linked_image_id" into a stable index below.
+      const idToFinalIndex: Record<string, number> = {};
 
       for (let i = 0; i < formImages.length; i++) {
         const imgItem = formImages[i];
+        idToFinalIndex[imgItem.id] = i;
         if (imgItem.type === 'existing') {
           finalImageRows.push({ product_id: productId, image_url: imgItem.url, display_order: i });
         } else if (imgItem.type === 'new' && imgItem.file) {
@@ -291,13 +308,23 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
         c => c.color_name_en.trim() !== '' || c.color_name_ar.trim() !== ''
       );
       if (activeColors.length > 0) {
-        const colorRows = activeColors.map((c, idx) => ({
-          product_id: productId,
-          color_name_en: c.color_name_en.trim(),
-          color_name_ar: c.color_name_ar.trim(),
-          color_code: c.color_code.trim() || '#000000',
-          display_order: idx,
-        }));
+        const colorRows = activeColors.map((c, idx) => {
+          let image_index: number | null = null;
+          if (c.linked_image_id === 'NONE') {
+            image_index = -1; // admin explicitly said this color has no image
+          } else if (c.linked_image_id && idToFinalIndex[c.linked_image_id] !== undefined) {
+            image_index = idToFinalIndex[c.linked_image_id]; // explicit pick
+          }
+          // else stays null -> old "color N -> image N+1" fallback, unchanged behavior
+          return {
+            product_id: productId,
+            color_name_en: c.color_name_en.trim(),
+            color_name_ar: c.color_name_ar.trim(),
+            color_code: c.color_code.trim() || '#000000',
+            display_order: idx,
+            image_index,
+          };
+        });
         const { error: colorError } = await supabase.from('product_colors').insert(colorRows);
         if (colorError) throw new Error(`Colors save failed: ${colorError.message}`);
       }
@@ -356,13 +383,12 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       is_new_arrival: product.is_new_arrival ?? false,
     });
 
-    setFormImages(
-      (product.product_images || []).map((img, index) => ({
-        id: `existing-${index}-${Math.random()}`,
-        type: 'existing',
-        url: img.image_url,
-      }))
-    );
+    const loadedImages = (product.product_images || []).map((img, index) => ({
+      id: `existing-${index}-${Math.random()}`,
+      type: 'existing' as const,
+      url: img.image_url,
+    }));
+    setFormImages(loadedImages);
 
     // Fetch colors fresh from DB to avoid stale data
     const { data: fetchedColors, error: colorFetchError } = await supabase
@@ -376,12 +402,28 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
       setColors([emptyColor()]);
     } else if (fetchedColors && fetchedColors.length > 0) {
       setColors(
-        fetchedColors.map((c, i) => ({
-          id: `c-existing-${i}-${Math.random()}`,
-          color_name_en: c.color_name_en,
-          color_name_ar: c.color_name_ar,
-          color_code: c.color_code,
-        }))
+        fetchedColors.map((c, i) => {
+          let linked_image_id: string | null = null;
+          if (c.image_index === -1) {
+            linked_image_id = 'NONE';
+          } else if (
+            c.image_index !== null &&
+            c.image_index !== undefined &&
+            loadedImages[c.image_index]
+          ) {
+            linked_image_id = loadedImages[c.image_index].id;
+          }
+          // Older rows saved before this feature simply won't have image_index at all,
+          // so linked_image_id stays null and the product card falls back to the
+          // original "color N -> image N+1" behavior automatically.
+          return {
+            id: `c-existing-${i}-${Math.random()}`,
+            color_name_en: c.color_name_en,
+            color_name_ar: c.color_name_ar,
+            color_code: c.color_code,
+            linked_image_id,
+          };
+        })
       );
     } else {
       setColors([emptyColor()]);
@@ -741,6 +783,44 @@ const AdminDashboard = ({ externalCategoryFilter }: { externalCategoryFilter?: s
                         <Trash2 size={16} />
                       </button>
                     </div>
+
+                    {/* ── Link this color to one specific photo ── */}
+                    {formImages.length > 0 && (
+                      <div className="color-image-link-picker">
+                        <span className="color-image-link-label">
+                          {t('Photo for this color:', 'صورة هذا اللون:')}
+                        </span>
+                        <div className="color-image-link-thumbs">
+                          <button
+                            type="button"
+                            className={`color-image-link-none ${!color.linked_image_id ? 'active' : ''}`}
+                            onClick={() => handleColorImageLink(color.id, null)}
+                            title={t('Auto (matches old default order)', 'تلقائي (حسب الترتيب الافتراضي القديم)')}
+                          >
+                            {t('Auto', 'تلقائي')}
+                          </button>
+                          {formImages.map((img, imgIdx) => (
+                            <button
+                              type="button"
+                              key={img.id}
+                              className={`color-image-link-thumb ${color.linked_image_id === img.id ? 'active' : ''}`}
+                              onClick={() => handleColorImageLink(color.id, img.id)}
+                              title={t(`Photo ${imgIdx + 1}`, `الصورة ${imgIdx + 1}`)}
+                            >
+                              <img src={img.url} alt="" />
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className={`color-image-link-none ${color.linked_image_id === 'NONE' ? 'active' : ''}`}
+                            onClick={() => handleColorImageLink(color.id, 'NONE')}
+                            title={t('This color has no photo of its own', 'هذا اللون بدون صورة خاصة به')}
+                          >
+                            {t('No Photo', 'بدون صورة')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </ReactSortable>

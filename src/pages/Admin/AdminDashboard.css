@@ -535,6 +535,76 @@ html[dir="rtl"] .filter-select-wrapper select {
 
 .remove-color-row-btn:hover { background-color: #fecaca; }
 
+/* --- COLOR → PHOTO LINK PICKER --- */
+.color-image-link-picker {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--primary-200);
+}
+
+.color-image-link-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-600);
+  margin-bottom: 0.5rem;
+}
+
+.color-image-link-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.color-image-link-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--primary-200);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: var(--white);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.color-image-link-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.color-image-link-thumb.active {
+  border-color: var(--primary-800);
+  transform: scale(1.05);
+}
+
+.color-image-link-none {
+  height: 44px;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 2px dashed var(--primary-300);
+  background: var(--white);
+  color: var(--primary-700);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.color-image-link-none.active {
+  border-style: solid;
+  border-color: var(--primary-800);
+  background: var(--primary-800);
+  color: var(--white);
+}
+
 .add-color-btn {
   background: transparent;
   border: 1px dashed var(--primary-400);
