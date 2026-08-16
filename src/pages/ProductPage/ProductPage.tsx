@@ -59,6 +59,8 @@ const ProductPage = () => {
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const lightboxScrollRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef(false);
 
   const isRTL = language === 'ar';
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -119,6 +121,44 @@ const ProductPage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxOpen]);
 
+  // When lightbox opens, jump the scroll strip to the currently active image
+  useEffect(() => {
+    if (lightboxOpen && lightboxScrollRef.current) {
+      const el = lightboxScrollRef.current;
+      isProgrammaticScroll.current = true;
+      requestAnimationFrame(() => {
+        el.scrollTo({ left: activeIdx * el.clientWidth, behavior: 'auto' });
+        // release the lock shortly after so real user scroll updates activeIdx
+        setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 50);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen]);
+
+  // Keep the scroll strip in sync when activeIdx changes via arrows/dots while open
+  const scrollLightboxTo = (idx: number, behavior: ScrollBehavior = 'smooth') => {
+    const el = lightboxScrollRef.current;
+    if (!el) return;
+    isProgrammaticScroll.current = true;
+    el.scrollTo({ left: idx * el.clientWidth, behavior });
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 400);
+  };
+
+  // Update activeIdx as the user scrolls/swipes through the lightbox
+  const handleLightboxScroll = () => {
+    if (isProgrammaticScroll.current) return;
+    const el = lightboxScrollRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== activeIdx && idx >= 0 && idx < images.length) {
+      setActiveIdx(idx);
+    }
+  };
+
   if (loading) {
     return (
       <div className="pp-loading">
@@ -164,6 +204,19 @@ const ProductPage = () => {
   };
   const goPrev = () => {
     if (images.length > 1) setActiveIdx(i => (i - 1 + images.length) % images.length);
+  };
+
+  const goNextLightbox = () => {
+    if (images.length <= 1) return;
+    const next = (activeIdx + 1) % images.length;
+    setActiveIdx(next);
+    scrollLightboxTo(next);
+  };
+  const goPrevLightbox = () => {
+    if (images.length <= 1) return;
+    const prev = (activeIdx - 1 + images.length) % images.length;
+    setActiveIdx(prev);
+    scrollLightboxTo(prev);
   };
 
   const handleShare = async () => {
@@ -538,30 +591,54 @@ const ProductPage = () => {
               <X size={22} />
             </button>
 
-            <img
-              src={currentImage}
-              alt={name}
-              className="pp-lightbox-image"
-              draggable={false}
+            <div
+              className="pp-lightbox-scroll"
+              ref={lightboxScrollRef}
+              onScroll={handleLightboxScroll}
               onClick={e => e.stopPropagation()}
-            />
+            >
+              {images.map((img, i) => (
+                <div className="pp-lightbox-slide" key={i}>
+                  <img
+                    src={img.image_url}
+                    alt={name}
+                    className="pp-lightbox-image"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
 
             {images.length > 1 && (
               <>
                 <button
                   className="pp-lightbox-arrow pp-lightbox-arrow-prev"
-                  onClick={e => { e.stopPropagation(); goPrev(); }}
+                  onClick={e => { e.stopPropagation(); goPrevLightbox(); }}
                   aria-label="Previous"
                 >
                   <PrevIcon size={22} />
                 </button>
                 <button
                   className="pp-lightbox-arrow pp-lightbox-arrow-next"
-                  onClick={e => { e.stopPropagation(); goNext(); }}
+                  onClick={e => { e.stopPropagation(); goNextLightbox(); }}
                   aria-label="Next"
                 >
                   <NextIcon size={22} />
                 </button>
+
+                <div className="pp-lightbox-dots">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      className={`pp-lightbox-dot ${i === activeIdx ? 'active' : ''}`}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setActiveIdx(i);
+                        scrollLightboxTo(i);
+                      }}
+                    />
+                  ))}
+                </div>
               </>
             )}
           </div>
