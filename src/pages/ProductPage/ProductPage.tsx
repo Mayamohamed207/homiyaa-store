@@ -592,22 +592,22 @@ const ProductPage = () => {
             </button>
 
             <div
-              className="pp-lightbox-scroll"
-              ref={lightboxScrollRef}
-              onScroll={handleLightboxScroll}
-              onClick={e => e.stopPropagation()}
-            >
-              {images.map((img, i) => (
-                <div className="pp-lightbox-slide" key={i}>
-                  <img
-                    src={img.image_url}
-                    alt={name}
-                    className="pp-lightbox-image"
-                    draggable={false}
-                  />
-                </div>
-              ))}
-            </div>
+            className="pp-lightbox-scroll"
+            ref={lightboxScrollRef}
+            onScroll={handleLightboxScroll}
+          >
+            {images.map((img, i) => (
+              <div className="pp-lightbox-slide" key={i}>
+                <img
+                  src={img.image_url}
+                  alt={name}
+                  className="pp-lightbox-image"
+                  draggable={false}
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+            ))}
+          </div>
 
             {images.length > 1 && (
               <>
