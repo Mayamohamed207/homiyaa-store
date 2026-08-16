@@ -14,6 +14,22 @@ interface ProductGridProps {
 
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'latest';
 
+// Normalizes text for search matching:
+// - lowercases Latin characters (case-insensitive search)
+// - unifies Arabic hamza/alef variants (أ إ آ ٱ) to plain ا
+// - unifies ة/ه and ى/ي (common Arabic typing variance)
+// - strips Arabic diacritics (tashkeel) so they never block a match
+const normalizeSearchText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u0652\u0670]/g, ''); // Arabic diacritics/tashkeel
+};
+
 export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const { language } = useLanguage();
   const { addToCart } = useCart();
@@ -128,14 +144,15 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
   const processedProducts = useMemo(() => {
     let result = products.filter(item => !item.is_hidden);
 
-    result = result.filter(item => {
-      const matchesEn =
-        item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category_en.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesAr =
-        item.name_ar.includes(searchQuery) || item.category_ar.includes(searchQuery);
-      return matchesEn || matchesAr;
-    });
+    const normalizedQuery = normalizeSearchText(searchQuery);
+    if (normalizedQuery) {
+      result = result.filter(item => {
+        const haystack = normalizeSearchText(
+          `${item.name_en} ${item.category_en} ${item.name_ar} ${item.category_ar}`
+        );
+        return haystack.includes(normalizedQuery);
+      });
+    }
 
     if (selectedCategory === '__wishlist__') {
       result = result.filter(item => wishlistIds.has(item.id));

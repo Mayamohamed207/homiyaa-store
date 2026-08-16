@@ -395,7 +395,22 @@ html[dir="rtl"] .mobile-strip-search-input { direction: rtl; }
 }
 
 .mobile-strip-clear-btn:hover { color: var(--primary-700); }
-
+.floating-whatsapp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 18px;
+  z-index: 999;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+  color: #fff;
+  text-decoration: none;
+}
 /* ── Mobile ── */
 @media (max-width: 599px) {
   .navbar-inner {

@@ -202,3 +202,14 @@
   background: var(--primary-800, #1e293b);
   color: #fff;
 }
+
+/* ─── Share button (added alongside product-favorite) ─── */
+
+.product-share {
+  color: var(--primary-400);
+}
+
+.product-share:hover {
+  color: var(--primary-700);
+  background: var(--primary-50);
+}

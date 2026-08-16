@@ -12,7 +12,6 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Grab saved language preference, or default to English
  const [language, setLanguage] = useState<Language>(() => {
     return (localStorage.getItem('homiyaa_lang') as Language) || 'ar';
   });
@@ -21,7 +20,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     localStorage.setItem('homiyaa_lang', language);
-    // Dynamically change the HTML document direction and lang attribute
     document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language, isRtl]);

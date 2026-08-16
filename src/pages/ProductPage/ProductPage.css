@@ -94,8 +94,9 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  pointer-events: none;
+  pointer-events: auto;
   -webkit-user-drag: none;
+  cursor: zoom-in;
 }
 
 /* Badges */
@@ -122,11 +123,20 @@
 .pp-badge-sold { background: #d93838; color: var(--white); }
 .pp-badge-pop  { background: var(--primary-500); color: var(--white); }
 
-/* Wishlist */
-.pp-wishlist-btn {
+/* Action buttons (share + wishlist) stacked top-right */
+.pp-action-btns {
   position: absolute;
   top: 12px;
   right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+}
+[dir="rtl"] .pp-action-btns { right: auto; left: 12px; }
+
+.pp-share-btn,
+.pp-wishlist-btn {
   background: var(--white);
   border: 1px solid var(--primary-100);
   width: 36px;
@@ -138,10 +148,14 @@
   cursor: pointer;
   color: var(--primary-400);
   box-shadow: var(--shadow-sm);
-  z-index: 5;
   transition: color var(--transition-base), background var(--transition-base);
 }
-[dir="rtl"] .pp-wishlist-btn { right: auto; left: 12px; }
+
+.pp-share-btn:hover {
+  color: var(--primary-700);
+  background: var(--primary-50);
+}
+
 .pp-wishlist-btn:hover { color: #d93838; background: #fff0f0; }
 
 /* Arrows */
@@ -433,3 +447,83 @@
 }
 
 @keyframes pp-spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════
+   LIGHTBOX
+   ══════════════════════════ */
+.pp-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  box-sizing: border-box;
+  cursor: zoom-out;
+  animation: pp-lightbox-fade 0.2s ease;
+}
+
+@keyframes pp-lightbox-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pp-lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  cursor: default;
+  box-shadow: var(--shadow-lg);
+}
+
+.pp-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: background var(--transition-base);
+}
+.pp-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.pp-lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: background var(--transition-base);
+}
+.pp-lightbox-arrow:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.pp-lightbox-arrow-prev { left: 18px; }
+.pp-lightbox-arrow-next { right: 18px; }
+
+@media (max-width: 767px) {
+  .pp-lightbox-arrow { display: none; }
+  .pp-lightbox-overlay { padding: 1rem; }
+}

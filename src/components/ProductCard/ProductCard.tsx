@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Edit, Trash2 } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../ui/Card/Card';
 import Badge from '../ui/Badge/Badge';
@@ -117,6 +117,34 @@ const ProductCard = ({
 
   const name = language === 'ar' ? product.name_ar : product.name_en;
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `https://homyiaa.com/product/${product.id}`;
+    const shareData = {
+      title: name,
+      text: language === 'ar' ? `شاهد ${name} على Homiyaa` : `Check out ${name} on Homiyaa`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled the share sheet — no need to show an error
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success(language === 'ar' ? 'تم نسخ الرابط' : 'Link copied to clipboard');
+      } catch (err) {
+        toast.error(language === 'ar' ? 'تعذر نسخ الرابط' : 'Could not copy link');
+      }
+    }
+  };
+
   let category = language === 'ar' ? product.category_ar : product.category_en;
   if (category && category.includes(' / ')) {
     const parts = category.split(' / ');
@@ -215,19 +243,31 @@ const ProductCard = ({
         )}
 
         {!isAdminMode && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`product-favorite ${wishlisted ? 'wishlisted' : ''}`}
-            aria-label="Toggle wishlist"
-            onClick={handleWishlistToggle}
-          >
-            <Heart
-              size={16}
-              fill={wishlisted ? '#ef4444' : 'none'}
-              color={wishlisted ? '#ef4444' : 'currentColor'}
-            />
-          </motion.button>
+          <div className="product-action-btns">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="product-share"
+              aria-label="Share"
+              onClick={handleShare}
+            >
+              <Share2 size={14} />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className={`product-favorite ${wishlisted ? 'wishlisted' : ''}`}
+              aria-label="Toggle wishlist"
+              onClick={handleWishlistToggle}
+            >
+              <Heart
+                size={16}
+                fill={wishlisted ? '#ef4444' : 'none'}
+                color={wishlisted ? '#ef4444' : 'currentColor'}
+              />
+            </motion.button>
+          </div>
         )}
 
         <img src={currentImageUrl} alt={name} className="product-image" />

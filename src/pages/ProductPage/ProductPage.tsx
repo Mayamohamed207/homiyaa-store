@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, Heart, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
@@ -55,6 +55,7 @@ const ProductPage = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -108,6 +109,16 @@ const ProductPage = () => {
     fetchProduct();
   }, [id]);
 
+  // Close lightbox on Escape key
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxOpen]);
+
   if (loading) {
     return (
       <div className="pp-loading">
@@ -153,6 +164,33 @@ const ProductPage = () => {
   };
   const goPrev = () => {
     if (images.length > 1) setActiveIdx(i => (i - 1 + images.length) % images.length);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `https://homyiaa.com/product/${product.id}`;
+    const shareData = {
+      title: name,
+      text: isRTL ? `شاهد ${name} على Homiyaa` : `Check out ${name} on Homiyaa`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled the share sheet — no need to show an error
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success(isRTL ? 'تم نسخ الرابط' : 'Link copied to clipboard');
+      } catch (err) {
+        toast.error(isRTL ? 'تعذر نسخ الرابط' : 'Could not copy link');
+      }
+    }
   };
 
   const handleAddToCart = () => {
@@ -274,6 +312,7 @@ const ProductPage = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.25 }}
                   draggable={false}
+                  onClick={() => setLightboxOpen(true)}
                 />
 
                 <div className="pp-img-badges">
@@ -287,36 +326,50 @@ const ProductPage = () => {
                   )}
                 </div>
 
-                <button
-                  className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
-                  aria-label="Wishlist"
-                  onClick={async () => {
-                    if (!user) {
-                      toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first');
-                      return;
-                    }
-                    if (wishlisted) {
-                      await supabase
-                        .from('wishlists')
-                        .delete()
-                        .match({ user_id: user.id, product_id: product.id });
-                      setWishlisted(false);
-                      toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
-                    } else {
-                      await supabase
-                        .from('wishlists')
-                        .insert({ user_id: user.id, product_id: product.id });
-                      setWishlisted(true);
-                      toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
-                    }
-                  }}
-                >
-                  <Heart
-                    size={18}
-                    fill={wishlisted ? '#ef4444' : 'none'}
-                    color={wishlisted ? '#ef4444' : 'currentColor'}
-                  />
-                </button>
+                <div className="pp-action-btns">
+                  <button
+                    className="pp-share-btn"
+                    aria-label="Share"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleShare();
+                    }}
+                  >
+                    <Share2 size={17} />
+                  </button>
+
+                  <button
+                    className={`pp-wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
+                    aria-label="Wishlist"
+                    onClick={async e => {
+                      e.stopPropagation();
+                      if (!user) {
+                        toast.error(isRTL ? 'سجل دخولك أولاً' : 'Please sign in first');
+                        return;
+                      }
+                      if (wishlisted) {
+                        await supabase
+                          .from('wishlists')
+                          .delete()
+                          .match({ user_id: user.id, product_id: product.id });
+                        setWishlisted(false);
+                        toast.success(isRTL ? 'تم الحذف من المفضلة' : 'Removed from wishlist');
+                      } else {
+                        await supabase
+                          .from('wishlists')
+                          .insert({ user_id: user.id, product_id: product.id });
+                        setWishlisted(true);
+                        toast.success(isRTL ? 'تمت الإضافة للمفضلة' : 'Added to wishlist');
+                      }
+                    }}
+                  >
+                    <Heart
+                      size={18}
+                      fill={wishlisted ? '#ef4444' : 'none'}
+                      color={wishlisted ? '#ef4444' : 'currentColor'}
+                    />
+                  </button>
+                </div>
 
                 {images.length > 1 && (
                   <>
@@ -470,6 +523,49 @@ const ProductPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Lightbox */}
+        {lightboxOpen && (
+          <div
+            className="pp-lightbox-overlay"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              className="pp-lightbox-close"
+              aria-label="Close"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <X size={22} />
+            </button>
+
+            <img
+              src={currentImage}
+              alt={name}
+              className="pp-lightbox-image"
+              draggable={false}
+              onClick={e => e.stopPropagation()}
+            />
+
+            {images.length > 1 && (
+              <>
+                <button
+                  className="pp-lightbox-arrow pp-lightbox-arrow-prev"
+                  onClick={e => { e.stopPropagation(); goPrev(); }}
+                  aria-label="Previous"
+                >
+                  <PrevIcon size={22} />
+                </button>
+                <button
+                  className="pp-lightbox-arrow pp-lightbox-arrow-next"
+                  onClick={e => { e.stopPropagation(); goNext(); }}
+                  aria-label="Next"
+                >
+                  <NextIcon size={22} />
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
