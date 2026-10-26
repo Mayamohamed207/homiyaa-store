@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# Homiyaa Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Homiyaa is an online store I built for a client from scratch, working alone on everything: the design, the frontend, the database, authentication, emails, and deployment. Customers can browse products, add them to a cart, place an order, and watch its status change live. The owner runs the whole shop from an admin dashboard.
 
-Currently, two official plugins are available:
+**Live site:** [https://www.homiyaa.store/]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+<p align="center">
+  <img src="docs/screenshots/homepage.png" height="300" alt="Homepage" />
+  <img src="docs/screenshots/homepage2.png" height="300" alt="Homepage, lower sections" />
+</p>
 
-## React Compiler
+## What it does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Customers
+- Create an account and log in (Supabase authentication)
+- Browse products by category and open a product page
+- Add items to the cart and place an order
+- Follow the order in real time. When the owner changes the status, the customer sees it without refreshing the page
+- Get an order confirmation email automatically
+- Pages like account and orders are protected, so only logged-in users can open them
 
-## Expanding the ESLint configuration
+![Product page](docs/screenshots/product-page.png)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+![Cart](docs/screenshots/cart.png)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+![Footer](docs/screenshots/footer.png)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Owner (admin dashboard)
+Only the admin account can open the dashboard. From there the owner can:
+- Add, edit, and remove products
+- Manage categories
+- Set up shipping
+- Update order status, which customers then see live
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+![Admin dashboard](docs/screenshots/admin-dashboard.png)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## How I built it
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Part | What I used |
+|---|---|
+| Frontend | React with TypeScript |
+| Styling | CSS3, with Framer Motion for animations |
+| Backend and database | Supabase (Postgres,SQL, authentication, real-time updates) |
+| Emails | EmailJS, for order confirmations |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+A few decisions worth explaining:
+
+- **Supabase instead of a custom backend.** The project needed login, a database, and live updates, and Supabase covers all three.
+- **Real-time tracking** uses Supabase's real-time subscriptions. The order page listens for changes, so the status updates the moment the admin changes it.
+- **Protected routes.** The app checks the user's session before it shows account pages, and checks the admin role before it shows the dashboard.
+- **Search setup.** I added a sitemap and `robots.txt` and verified the site with Google Search Console so the store can be found on Google.
