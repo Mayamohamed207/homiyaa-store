@@ -6,7 +6,7 @@ import emailjs from '@emailjs/browser';
 import { X, Trash2, ShoppingBag, Loader2, ShoppingCart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { trackInitiateCheckout, trackPurchase } from '../../lib/pixel';
+import { trackInitiateCheckout, trackPurchase, PixelItem } from '../../lib/pixel'; // PIXEL
 import './CartDrawer.css';
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -65,14 +65,19 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const shippingCost = cart.length > 0 && activeGovRecord ? Number(activeGovRecord.cost) : 0;
   const grandTotal = subtotal + shippingCost;
 
-    // PIXEL: fires once each time the cart opens with items in it
+  // PIXEL: the cart items in the format the pixel helper expects
+  const pixelItems: PixelItem[] = cart.map(i => ({
+    id: i.id,
+    name: i.name_en,
+    price: i.price,
+    quantity: i.quantity,
+  }));
+
+  // PIXEL: fires once each time the drawer opens with items in the cart
+  // (must stay above any early return so hooks run in the same order every render)
   useEffect(() => {
     if (isOpen && cart.length > 0) {
-      trackInitiateCheckout(
-        subtotal,
-        cart.map(i => i.id),
-        cart.reduce((n, i) => n + i.quantity, 0)
-      );
+      trackInitiateCheckout(pixelItems, subtotal);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -179,11 +184,18 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       if (error) throw error;
 
       const orderId = String(data?.[0]?.id || 'N/A');
-            // PIXEL: order saved successfully, so count the purchase
-      trackPurchase(grandTotal, cart.map(i => i.id), orderId);
+
+      // PIXEL: order saved successfully, so count the purchase
+      // (before clearCart, because the cart is empty afterwards)
+      trackPurchase(pixelItems, grandTotal, orderId);
 
       if (email.trim() && sendConfirmation) {
-        await sendConfirmationEmail(orderId);
+        try {
+          await sendConfirmationEmail(orderId);
+        } catch (emailErr) {
+          // the order is already saved, so a failed email must not fail the checkout
+          console.error('Confirmation email failed:', emailErr);
+        }
       }
 
       clearCart();

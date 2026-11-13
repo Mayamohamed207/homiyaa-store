@@ -115,7 +115,7 @@ const ProductPage = () => {
           firstVariant?.price !== null && firstVariant?.price !== undefined
             ? firstVariant.price
             : data.discount_price ?? data.price;
-        trackViewContent(data.id, data.name_en, Number(initialPrice));
+        trackViewContent(data.id, data.name_en, Number(initialPrice), data.category_en);
       }
       setLoading(false);
     };
