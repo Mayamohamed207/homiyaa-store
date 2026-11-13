@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /account
 
-Sitemap: https://homyiaa.com/sitemap.xml
+Sitemap: https://www.homiyaa.store/sitemap.xml
