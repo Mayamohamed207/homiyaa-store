@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { trackAddToCart } from '../lib/pixel'; // PIXEL
 
 export interface CartItem {
   id: number;
@@ -71,15 +72,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     chosenColor: CartItem['selected_color'] = null,
     chosenVariant: CartItem['selected_variant'] = null
   ) => {
+    const activePrice =
+      product.discount_price !== undefined
+        ? product.discount_price ?? product.price
+        : product.price;
+
+    // PIXEL: outside setCart so it fires once per click
+    trackAddToCart(product.id, product.name_en, Number(activePrice), 1);
+
     setCart(prev => {
       const productId = product.id;
       const nameEn = product.name_en;
       const nameAr = product.name_ar;
-
-      const activePrice =
-        product.discount_price !== undefined
-          ? product.discount_price ?? product.price
-          : product.price;
 
       let imgUrl = FALLBACK_IMAGE;
       if (typeof product.image === 'string') {

@@ -214,7 +214,7 @@ export const ProductGrid = ({ searchQuery }: ProductGridProps) => {
                 '@type': 'ListItem',
                 position: index + 1,
                 name: language === 'ar' ? item.name_ar : item.name_en,
-                url: `https://homyiaa.com/product/${item.id}`,
+                url: `https://homiyaa.store/product/${item.id}`,
                 image: item.product_images?.[0]?.image_url || '',
                 offers: {
                   '@type': 'Offer',

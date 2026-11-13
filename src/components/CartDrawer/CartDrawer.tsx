@@ -6,6 +6,7 @@ import emailjs from '@emailjs/browser';
 import { X, Trash2, ShoppingBag, Loader2, ShoppingCart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { trackInitiateCheckout, trackPurchase } from '../../lib/pixel';
 import './CartDrawer.css';
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -63,6 +64,18 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = cart.length > 0 && activeGovRecord ? Number(activeGovRecord.cost) : 0;
   const grandTotal = subtotal + shippingCost;
+
+    // PIXEL: fires once each time the cart opens with items in it
+  useEffect(() => {
+    if (isOpen && cart.length > 0) {
+      trackInitiateCheckout(
+        subtotal,
+        cart.map(i => i.id),
+        cart.reduce((n, i) => n + i.quantity, 0)
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const buildOrderDetailsHtml = () => {
     const rows = cart.map(item => {
@@ -166,6 +179,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
       if (error) throw error;
 
       const orderId = String(data?.[0]?.id || 'N/A');
+            // PIXEL: order saved successfully, so count the purchase
+      trackPurchase(grandTotal, cart.map(i => i.id), orderId);
 
       if (email.trim() && sendConfirmation) {
         await sendConfirmationEmail(orderId);

@@ -7,7 +7,7 @@ import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { trackViewContent, trackAddToCart } from '../../lib/pixel'; // PIXEL
+import { trackViewContent } from '../../lib/pixel';
 import toast from 'react-hot-toast';
 import './ProductPage.css';
 
@@ -307,8 +307,6 @@ const ProductPage = () => {
       selected_variant: chosenVariantPayload,
     });
 
-    // PIXEL: AddToCart
-    trackAddToCart(product.id, product.name_en, Number(displayPrice), 1);
 
     toast.success(isRTL ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };

@@ -119,7 +119,7 @@ const ProductCard = ({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = `https://homyiaa.com/product/${product.id}`;
+    const shareUrl = `https://homiyaa.store/product/${product.id}`;
     const shareData = {
       title: name,
       text: language === 'ar' ? `شاهد ${name} على Homiyaa` : `Check out ${name} on Homiyaa`,
