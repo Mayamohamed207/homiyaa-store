@@ -11,6 +11,7 @@ import Footer from './components/Footer/Footer';
 import TrustBadges from './components/TrustBadges/TrustBadges';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AccountPage from './pages/AccountPage/AccountPage';
+import PixelPageView from './components/PixelPageView';
 import './App.css';
 
 function App() {
@@ -19,13 +20,14 @@ function App() {
 
   return (
     <BrowserRouter>
+      <PixelPageView />
       <div className="app">
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-        
+
         <Toaster
           position="top-center"
           containerStyle={{
-            zIndex: 999999, 
+            zIndex: 999999,
           }}
           toastOptions={{
             duration: 3000,
@@ -71,11 +73,11 @@ function App() {
                 <Helmet>
                   <title>Homiyaa | أدوات منزلية ومستلزمات المطبخ - Home Essentials</title>
                   <meta name="description" content="تسوق أفضل الأدوات المنزلية، مستلزمات المطبخ والديكورات من هوميا مع توصيل سريع لجميع المحافظات." />
-                  <link rel="canonical" href="https://homyiaa.com/" />
+                  <link rel="canonical" href="https://www.homiyaa.store/" />
                   <meta property="og:type" content="website" />
                   <meta property="og:title" content="Homiyaa | أدوات منزلية ومستلزمات المطبخ" />
                   <meta property="og:description" content="أرقى الأدوات المنزلية ومستلزمات المطبخ بتوصيل سريع في مصر." />
-                  <meta property="og:url" content="https://homyiaa.com/" />
+                  <meta property="og:url" content="https://www.homiyaa.store/" />
                 </Helmet>
                 <Hero />
                 <ProductGrid searchQuery={searchQuery} />

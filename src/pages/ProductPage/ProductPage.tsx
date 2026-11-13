@@ -7,8 +7,11 @@ import { supabase } from '../../supabaseClient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { trackViewContent, trackAddToCart } from '../../lib/pixel'; // PIXEL
 import toast from 'react-hot-toast';
 import './ProductPage.css';
+
+const SITE_URL = 'https://www.homiyaa.store'; // FIX
 
 interface ProductColor {
   color_code: string;
@@ -105,6 +108,14 @@ const ProductPage = () => {
         setSelectedVariant(data.product_variants && data.product_variants.length > 0 ? 0 : null);
         setSelectedColor(null);
         setActiveIdx(0);
+
+        // PIXEL: ViewContent fires once per product load
+        const firstVariant = data.product_variants?.[0];
+        const initialPrice =
+          firstVariant?.price !== null && firstVariant?.price !== undefined
+            ? firstVariant.price
+            : data.discount_price ?? data.price;
+        trackViewContent(data.id, data.name_en, Number(initialPrice));
       }
       setLoading(false);
     };
@@ -190,6 +201,7 @@ const ProductPage = () => {
   const category = isRTL ? product.category_ar : product.category_en;
   const description = isRTL ? product.description_ar : product.description_en;
   const plainDescription = (description || `${name} - Homiyaa`).slice(0, 155);
+  const productUrl = `${SITE_URL}/product/${product.id}`; // FIX
 
   const activeVariant =
     variants.length > 0 && selectedVariant !== null ? variants[selectedVariant] : null;
@@ -220,7 +232,7 @@ const ProductPage = () => {
   };
 
   const handleShare = async () => {
-    const shareUrl = `https://homyiaa.com/product/${product.id}`;
+    const shareUrl = productUrl; // FIX
     const shareData = {
       title: name,
       text: isRTL ? `شاهد ${name} على Homiyaa` : `Check out ${name} on Homiyaa`,
@@ -295,6 +307,9 @@ const ProductPage = () => {
       selected_variant: chosenVariantPayload,
     });
 
+    // PIXEL: AddToCart
+    trackAddToCart(product.id, product.name_en, Number(displayPrice), 1);
+
     toast.success(isRTL ? 'تمت الإضافة إلى السلة' : 'Added to cart');
   };
 
@@ -303,12 +318,12 @@ const ProductPage = () => {
       <Helmet>
         <title>{name} | Homiyaa</title>
         <meta name="description" content={plainDescription} />
-        <link rel="canonical" href={`https://homyiaa.com/product/${product.id}`} />
+        <link rel="canonical" href={productUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={`${name} | Homiyaa`} />
         <meta property="og:description" content={plainDescription} />
         <meta property="og:image" content={images.length > 0 ? images[0].image_url : ''} />
-        <meta property="og:url" content={`https://homyiaa.com/product/${product.id}`} />
+        <meta property="og:url" content={productUrl} />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
@@ -324,7 +339,7 @@ const ProductPage = () => {
               availability: product.is_sold_out
                 ? 'https://schema.org/OutOfStock'
                 : 'https://schema.org/InStock',
-              url: `https://homyiaa.com/product/${product.id}`,
+              url: productUrl,
             },
           })}
         </script>
@@ -592,22 +607,22 @@ const ProductPage = () => {
             </button>
 
             <div
-            className="pp-lightbox-scroll"
-            ref={lightboxScrollRef}
-            onScroll={handleLightboxScroll}
-          >
-            {images.map((img, i) => (
-              <div className="pp-lightbox-slide" key={i}>
-                <img
-                  src={img.image_url}
-                  alt={name}
-                  className="pp-lightbox-image"
-                  draggable={false}
-                  onClick={e => e.stopPropagation()}
-                />
-              </div>
-            ))}
-          </div>
+              className="pp-lightbox-scroll"
+              ref={lightboxScrollRef}
+              onScroll={handleLightboxScroll}
+            >
+              {images.map((img, i) => (
+                <div className="pp-lightbox-slide" key={i}>
+                  <img
+                    src={img.image_url}
+                    alt={name}
+                    className="pp-lightbox-image"
+                    draggable={false}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+              ))}
+            </div>
 
             {images.length > 1 && (
               <>
